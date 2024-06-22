@@ -1,0 +1,50 @@
+/* This sets the color for "TK" nodes to a light blue green. */
+g.type-TK>rect {
+    fill: #00ffd0;
+}
+
+text {
+    font-weight: 300;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 14px;
+}
+
+.node rect {
+    stroke: #999;
+    fill: #fff;
+    stroke-width: 1.5px;
+}
+
+.edgePath path {
+    stroke: #333;
+    stroke-width: 1.5px;
+}
+
+textarea {
+    width: 800px;
+}
+
+label {
+    margin-top: 1em;
+    display: block;
+}
+
+.error {
+    color: red;
+}
+
+.flex-parent-element {
+    display: flex;
+    /*  border: 2px solid black;*/
+    width: 25%;
+}
+
+.flex-child-element {
+    /*  flex: 1;*/
+    /*  border: 2px solid black;*/
+    /*  margin: 10px;*/
+}
+
+.flex-child-element:first-child {
+    margin-right: 2px;
+}

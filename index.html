@@ -1,0 +1,46 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DAG Todo</title>
+</head>
+<link rel="stylesheet" href="style.css" />
+<title>Test</title>
+
+<body>
+    <div>
+        <h1>Test</h1>
+        <button id="addNodeBtn" onclick="addNodeBtnFn()">Add node</button>
+        <input type="text" id="addNodeTextBox" value="" />
+    </div>
+
+    <div class="flex-parent-element">
+        <div class="flex-child-element">Source node:</div>
+        <div id="sourceNodeTextEl" class="flex-child-element"></div>
+    </div>
+
+    <svg id="svg-canvas" width=960 height=600>
+        <g></g>
+        <text id="graphLabel" x="100" y="190" text-anchor="middle" font-size="16px"></text>
+    </svg>
+
+    <form>
+        <label for="inputGraph">Graphviz Definition</label>
+        <textarea id="inputGraph" rows="5" style="display: block">
+   </textarea>
+
+        <a id="graphLink">Link for this graph</a>
+    </form>
+
+</body>
+
+<script src="
+ https://cdnjs.cloudflare.com/ajax/libs/d3/6.2.0/d3.min.js" charset="utf-8"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dagre-d3/0.6.4/dagre-d3.min.js" charset="utf-8"></script>
+<script src="fs-helpers.js"></script>
+<script src="script.js"></script>
+
+</html>
