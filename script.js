@@ -1,11 +1,22 @@
 function graphToJson() {
-    jsonGraph = dagreD3.graphlib.json.write(g);
+    let jsonGraph = dagreD3.graphlib.json.write(g);
     return JSON.stringify(jsonGraph)
 }
 
 function graphFromJson(json) {
     let jsonGraph = JSON.parse(json);
     return dagreD3.graphlib.json.read(jsonGraph);
+}
+
+function graphToLocalStorage() {
+    let jsonGraph = graphToJson();
+    localStorage.setItem("graph", JSON.stringify(jsonGraph));
+}
+
+function graphFromLocalStorage() {
+    const stringJsonGraph = localStorage.getItem("graph");
+    const jsonGraph = JSON.parse(stringJsonGraph);
+    return graphFromJson(jsonGraph);
 }
 
 function graphToURL() {
@@ -76,11 +87,12 @@ function setupGraph() {
     g.setEdge(0, 1);
 }
 
+function clearSourceNode() {
+    sourceNodeTextEl.innerText = "";
+    sourceNodeEl = undefined;
+}
+
 function nodeClickListener(event) {
-    function clearSourceNode() {
-        sourceNodeTextEl.innerText = "";
-        sourceNodeEl = undefined;
-    }
     // First click with no source node set.
     if (sourceNodeEl === undefined) {
         sourceNodeTextEl.innerText = this.textContent;
@@ -94,7 +106,7 @@ function nodeClickListener(event) {
     // Add edge
     g.setEdge(sourceNodeEl.__data__, this.__data__);
     clearSourceNode();
-    updateGraph();
+    reduceStoreRenderGraph();
     // d3.select("#graphLabel").text(this.textContent);
 }
 
@@ -143,7 +155,7 @@ function renderGraph() {
         .on('click', nodeClickListener);
 }
 
-function updateGraph() {
+function reduceStoreRenderGraph() {
     // https://brunoscheufler.com/blog/2021-12-05-decreasing-graph-complexity-with-transitive-reductions
     function getChildren(graph, node) {
         return graph.neighbors(node).filter(n => graph.hasEdge(node, n));
@@ -273,7 +285,7 @@ function updateGraph() {
         stack.push(node);
     }
     g = performTransitiveReduction(g);
-
+    graphToLocalStorage();
     renderGraph();
 }
 
@@ -314,12 +326,14 @@ function initGraph() {
     if (graphMatch) {
         let stringJsonGraph = decodeURIComponent(graphMatch[1]);
         g = graphFromJson(stringJsonGraph);
+    } else if (localStorage.getItem("graph")) {
+        g = graphFromLocalStorage();
     } else {
         // Create the input graph
         g = newGraph();
         setupGraph();
     }
-    updateGraph();
+    reduceStoreRenderGraph();
     initZoom();
 }
 
@@ -369,7 +383,7 @@ window.addEventListener('keyup', function (e) {
     if (key === "Delete") {
         if (sourceNodeEl !== undefined) {
             g.removeNode(sourceNodeEl.__data__);
-            updateGraph();
+            reduceStoreRenderGraph();
         }
     }
 });
@@ -378,6 +392,7 @@ textBoxEl.addEventListener('keyup', function (e) {
     if (e.key === "Enter") {
         addNodeBtnFn();
     }
+    clearSourceNode()
 });
 
 /* Main */
