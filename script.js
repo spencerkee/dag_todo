@@ -374,6 +374,12 @@ window.addEventListener('keyup', function (e) {
     }
 });
 
+textBoxEl.addEventListener('keyup', function (e) {
+    if (e.key === "Enter") {
+        addNodeBtnFn();
+    }
+});
+
 /* Main */
 
 initGraph();
