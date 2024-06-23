@@ -384,6 +384,7 @@ window.addEventListener('keyup', function (e) {
         if (sourceNodeEl !== undefined) {
             g.removeNode(sourceNodeEl.__data__);
             reduceStoreRenderGraph();
+            clearSourceNode();
         }
     }
 });
@@ -392,7 +393,6 @@ textBoxEl.addEventListener('keyup', function (e) {
     if (e.key === "Enter") {
         addNodeBtnFn();
     }
-    clearSourceNode()
 });
 
 /* Main */

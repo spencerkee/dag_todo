@@ -1,6 +1,19 @@
+body.clearfix::after {
+    content: "";
+    display: table;
+    clear: both;
+}
+
 /* This sets the color for "TK" nodes to a light blue green. */
 g.type-TK>rect {
     fill: #00ffd0;
+}
+
+svg {
+    border: 1px solid #0E0;
+    flex-grow: 1;
+    width: 100vw;
+    height: 100vh;
 }
 
 text {

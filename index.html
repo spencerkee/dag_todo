@@ -10,7 +10,7 @@
 <link rel="stylesheet" href="style.css" />
 <title>Test</title>
 
-<body>
+<body class="clearfix">
     <div>
         <h1>Test</h1>
         <button id="addNodeBtn" onclick="addNodeBtnFn()">Add node</button>
@@ -31,17 +31,17 @@
         <div id="sourceNodeTextEl" class="flex-child-element"></div>
     </div>
 
-    <svg id="svg-canvas" width=960 height=600>
+    <svg id="svg-canvas">
         <g></g>
         <text id="graphLabel" x="100" y="190" text-anchor="middle" font-size="16px"></text>
     </svg>
 
-    <form>
+    <!-- <form>
         <label for="inputGraph">Graphviz Definition</label>
         <textarea id="inputGraph" rows="5" style="display: block">
-   </textarea>
+   </textarea> -->
 
-        <a id="graphLink">Link for this graph</a>
+    <a id="graphLink">Link for this graph</a>
     </form>
 
 </body>
