@@ -7,7 +7,8 @@ function loadFile(input) {
     reader.readAsText(file);
 
     reader.onload = function () {
-        console.log(reader.result);
+        g = graphFromJson(reader.result);
+        updateGraph();
     };
 
     reader.onerror = function () {
@@ -15,11 +16,13 @@ function loadFile(input) {
     };
 }
 
-function saveFile(json) {
+function saveFile() {
+    json = graphToJson();
     var a = document.createElement("a")
     a.href = URL.createObjectURL(
         new Blob([json], { type: "application/json" })
     )
-    a.download = "myFile.json"
+    let now = new Date();
+    a.download = `todo-${now.toISOString()}.json`
     a.click()
 }

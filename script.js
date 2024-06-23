@@ -1,3 +1,13 @@
+function graphToJson() {
+    jsonGraph = dagreD3.graphlib.json.write(g);
+    return JSON.stringify(jsonGraph)
+}
+
+function graphFromJson(json) {
+    let jsonGraph = JSON.parse(json);
+    return dagreD3.graphlib.json.read(jsonGraph);
+}
+
 function graphToURL() {
     var elems = [window.location.protocol, '//',
     window.location.host,
@@ -5,8 +15,8 @@ function graphToURL() {
         '?'];
 
     var queryParams = [];
-    jsonGraph = dagreD3.graphlib.json.write(g);
-    stringJsonGraph = JSON.stringify(jsonGraph)
+
+    stringJsonGraph = graphToJson();
     queryParams.push('graph=' + encodeURIComponent(stringJsonGraph));
     elems.push(queryParams.join('&'));
 
@@ -302,10 +312,8 @@ function initGraph() {
     let graphRE = /[?&]graph=([^&]+)/;
     let graphMatch = window.location.search.match(graphRE);
     if (graphMatch) {
-
         let stringJsonGraph = decodeURIComponent(graphMatch[1]);
-        let jsonGraph = JSON.parse(stringJsonGraph);
-        g = dagreD3.graphlib.json.read(jsonGraph);
+        g = graphFromJson(stringJsonGraph);
     } else {
         // Create the input graph
         g = newGraph();
@@ -314,6 +322,8 @@ function initGraph() {
     updateGraph();
     initZoom();
 }
+
+
 
 /* Globals */
 let sourceNodeEl = undefined;
