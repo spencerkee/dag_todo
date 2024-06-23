@@ -15,6 +15,42 @@
         <h1>Test</h1>
         <button id="addNodeBtn" onclick="addNodeBtnFn()">Add node</button>
         <input type="text" id="addNodeTextBox" value="" />
+        <!-- <button id="\Btn"> Choose Folder </button> -->
+        <!-- <button id="drawBtn"> Draw </button>
+        <button id="printResultsBtn"> Print Results </button> -->
+        <!-- <button id="loadResultsBtn"> Load Results </button>
+        <button id="saveResultsBtn"> Save Results </button> -->
+
+        <!-- <label>Load File</label>
+        <input type="file" onchange="loadFile(this)"> -->
+
+        <input type="file" name="" id='input_file' onchange="loadFile(this)" hidden>
+        <button onclick="open_file()"> Load File </button>
+        <script type="text/javascript">
+            function open_file() {
+                document.getElementById('input_file').click();
+            }
+        </script>
+
+        <button onclick="saveFile()"> Save File </button>
+
+        <!-- <script>
+            function readFile(input) {
+                let file = input.files[0];
+
+                let reader = new FileReader();
+
+                reader.readAsText(file);
+
+                reader.onload = function () {
+                    console.log(reader.result);
+                };
+
+                reader.onerror = function () {
+                    console.log(reader.error);
+                };
+            }
+        </script> -->
     </div>
 
     <div class="flex-parent-element">

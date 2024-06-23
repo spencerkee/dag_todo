@@ -296,11 +296,36 @@ function initZoom() {
     d3.select('svg')
         .call(zoom);
 }
-let textBoxEl = document.getElementById('addNodeTextBox');
-let sourceNodeTextEl = document.getElementById('sourceNodeTextEl');
-let sourceNodeEl;
-let graphLink = d3.select("#graphLink");
-let g;
+
+function initGraph() {
+    // Check for graph parameters in the URL
+    let graphRE = /[?&]graph=([^&]+)/;
+    let graphMatch = window.location.search.match(graphRE);
+    if (graphMatch) {
+
+        let stringJsonGraph = decodeURIComponent(graphMatch[1]);
+        let jsonGraph = JSON.parse(stringJsonGraph);
+        g = dagreD3.graphlib.json.read(jsonGraph);
+    } else {
+        // Create the input graph
+        g = newGraph();
+        setupGraph();
+    }
+    updateGraph();
+    initZoom();
+}
+
+/* Globals */
+let sourceNodeEl = undefined;
+let g = undefined;
+
+const textBoxEl = document.getElementById('addNodeTextBox');
+const sourceNodeTextEl = document.getElementById('sourceNodeTextEl');
+const graphLink = d3.select("#graphLink");
+
+const loadResultsBtn = document.getElementById('loadResultsBtn');
+const saveResultsBtn = document.getElementById('saveResultsBtn');
+
 // Create the renderer
 var render = new dagreD3.render();
 
@@ -311,22 +336,10 @@ var svgGroup = d3.select("svg g");
 let zoom = d3.zoom()
     .on('zoom', handleZoom);
 
-// Check for graph parameters in the URL
-let graphRE = /[?&]graph=([^&]+)/;
-let graphMatch = window.location.search.match(graphRE);
-if (graphMatch) {
+/* Event listeners */
+// loadResultsBtn.addEventListener('change', async () => { loadResults(); });
+// saveResultsBtn.addEventListener('change', async () => { saveResults(); });
 
-    let stringJsonGraph = decodeURIComponent(graphMatch[1]);
-    let jsonGraph = JSON.parse(stringJsonGraph);
-    g = dagreD3.graphlib.json.read(jsonGraph);
-} else {
-    // Create the input graph
-    g = newGraph();
-    setupGraph();
-}
-
-updateGraph();
-initZoom();
 // On a click anywhere on the screen, check if that element or one of it's ancestors
 // is a node. Probably a better way of doing this is restricting it to just that box.
 https://stackoverflow.com/questions/36695438/detect-click-outside-div-using-javascript
@@ -342,7 +355,7 @@ window.addEventListener('click', function (e) {
 });
 
 window.addEventListener('keyup', function (e) {
-    const key = event.key;
+    const key = e.key;
     if (key === "Delete") {
         if (sourceNodeEl !== undefined) {
             g.removeNode(sourceNodeEl.__data__);
@@ -350,3 +363,7 @@ window.addEventListener('keyup', function (e) {
         }
     }
 });
+
+/* Main */
+
+initGraph();
