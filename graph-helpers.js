@@ -115,40 +115,65 @@ function renderGraph() {
         .on('click', nodeClickListener);
 }
 
-function reduceStoreRenderGraph() {
-    // https://brunoscheufler.com/blog/2021-12-05-decreasing-graph-complexity-with-transitive-reductions
-    function getChildren(graph, node) {
-        return graph.neighbors(node).filter(n => graph.hasEdge(node, n));
+function topologicalSort(graph) {
+    const visited = {};
+    const stack = [];
+
+    for (const node of graph.nodes()) {
+        if (!visited[node]) {
+            topologicalSortHelper(graph, node, visited, stack);
+        }
     }
 
-    function getDescendents(graph, node) {
-        function dfs(graph, start) {
-            const stack = [start];
-            const visited = new Set();
-            const result = [];
+    return stack.reverse();
+}
 
-            while (stack.length) {
-                const vertex = stack.pop();
+function topologicalSortHelper(graph, node, visited, stack) {
+    visited[node] = true;
 
-                if (!visited.has(vertex)) {
-                    visited.add(vertex);
-                    result.push(vertex);
+    for (const neighbor of graph.neighbors(node)) {
+        if (!visited[neighbor]) {
+            topologicalSortHelper(neighbor, visited, stack);
+        }
+    }
 
-                    for (const child of getChildren(graph, vertex)) {
-                        stack.push(child);
-                    }
+    stack.push(node);
+}
+
+// https://brunoscheufler.com/blog/2021-12-05-decreasing-graph-complexity-with-transitive-reductions
+function getChildren(graph, node) {
+    return graph.neighbors(node).filter(n => graph.hasEdge(node, n));
+}
+
+function getDescendents(graph, node) {
+    function dfs(graph, start) {
+        const stack = [start];
+        const visited = new Set();
+        const result = [];
+
+        while (stack.length) {
+            const vertex = stack.pop();
+
+            if (!visited.has(vertex)) {
+                visited.add(vertex);
+                result.push(vertex);
+
+                for (const child of getChildren(graph, vertex)) {
+                    stack.push(child);
                 }
             }
-
-            return result;
         }
 
-        let descendants = dfs(graph, node);
-        // Remove self
-        descendants = descendants.slice(1);
-        return descendants;
+        return result;
     }
 
+    let descendants = dfs(graph, node);
+    // Remove self
+    descendants = descendants.slice(1);
+    return descendants;
+}
+
+function reduceStoreRenderGraph() {
     function countIncomingEdges(graph, node) {
         return graph.edges().filter(edge => edge.w === node).length;
     }
@@ -216,34 +241,6 @@ function reduceStoreRenderGraph() {
         return transitiveReduction;
     }
 
-    function topologicalSort(graph) {
-        const visited = {};
-        const stack = [];
-
-        for (const node of graph.nodes()) {
-            if (!visited[node]) {
-                topologicalSortHelper(graph, node, visited, stack);
-            }
-        }
-
-        return stack.reverse();
-    }
-
-    // function getNeighbors(graph, node) {
-    //   return neighbors = graph.edges().filter(edge => edge.w == node).map(e => e.v);
-    // }
-
-    function topologicalSortHelper(graph, node, visited, stack) {
-        visited[node] = true;
-
-        for (const neighbor of graph.neighbors(node)) {
-            if (!visited[neighbor]) {
-                topologicalSortHelper(neighbor, visited, stack);
-            }
-        }
-
-        stack.push(node);
-    }
     g = performTransitiveReduction(g);
     graphToLocalStorage();
     renderGraph();

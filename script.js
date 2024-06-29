@@ -15,6 +15,20 @@ function editNodeBtnFn() {
     setSourceNode(newSourceNode);
 }
 
+function updateList() {
+    // Clear listEl and add g.sources() to listEl
+    listEl.innerHTML = '';
+    if (sourceNodeEl === undefined) {
+        g.sources().forEach(function (v) {
+            let li = document.createElement('li');
+            li.textContent = v;
+            listEl.appendChild(li);
+        });
+    } else {
+        debugger;
+    }
+}
+
 // TODO Move event listener logic here.
 // Note that addNode recreates the node it doesn't copy over properties.
 // I'll see if that's an issue later.
@@ -39,31 +53,14 @@ function editNode(graph, oldNodeName, newNodeName) {
     }
     // Copy successor edges to new node.
     for (const successorName of graph.successors(oldNodeName)) {
+        // TODO possibly don't need this copy-everything-except-elem anymore because
+        // it didn't fix the issue in the first place.
         let oldEdge = graph.edge(oldNodeName, successorName);
         let { elem: _, ...newEdge } = oldEdge;
         graph.setEdge(newNodeName, successorName, newEdge);
     }
 
     graph.removeNode(oldNodeName);
-    // let successors = graph.successors(oldNodeName);
-
-    // const graphPostEdit = newGraph();
-    // for (const node of graph.nodes()) {
-    //     if (node !== oldNodeName) {
-    //         addNode(graphPostEdit, node);
-    //     } else {
-    //         addNode(graphPostEdit, newNodeName);
-    //     }
-    // }
-
-    // for (const edge of graph.edges()) {
-    //     newEdge = structuredClone(edge);
-    //     if (newEdge.v === oldNodeName) { newEdge.v = newNodeName }
-    //     if (newEdge.w === oldNodeName) { newEdge.w = newNodeName }
-    //     graphPostEdit.setEdge(newEdge.v, newEdge.w);
-    // }
-
-    // g = graphPostEdit;
 }
 
 // Note this also clears the edit text box. I'll see if that's an issue later.
@@ -144,15 +141,14 @@ function initGraph() {
     initZoom();
 }
 
-
-
 /* Globals */
 let sourceNodeEl = undefined;
 let g = undefined;
 
 const addNodeTextBoxEl = document.getElementById('addNodeTextBox');
 const editNodeTextBoxEl = document.getElementById('editNodeTextBox');
-const sourceNodeTextEl = document.getElementById('sourceNodeTextEl');
+const sourceNodeTextEl = document.getElementById('sourceNodeText');
+const listEl = document.getElementById('list');
 const graphLink = d3.select("#graphLink");
 
 const loadResultsBtn = document.getElementById('loadResultsBtn');
