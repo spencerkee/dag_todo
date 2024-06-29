@@ -82,14 +82,14 @@ function renderGraph() {
     //   .scale(hRatio < wRatio ? hRatio : wRatio)
     //   .event(svg);
 
-    g.nodes().forEach(function (v) {
-        var node = g.node(v);
-        // Round the corners of the nodes
-        node.rx = node.ry = 5;
-    });
+    // g.nodes().forEach(function (v) {
+    //     var node = g.node(v);
+    //     // Round the corners of the nodes
+    //     node.rx = node.ry = 5;
+    // });
 
     // Run the renderer. This is what draws the final graph.
-    render(d3.select("svg g"), g);
+    render(svgGroup, g);
 
     // // Center the graph
     // var xCenterOffset = (svg.attr("width") - g.graph().width) / 2;

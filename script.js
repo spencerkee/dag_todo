@@ -8,8 +8,11 @@ function addNodeBtnFn() {
 function editNodeBtnFn() {
     if (!editNodeTextBoxEl.value) return;
     editNode(g, sourceNodeTextEl.innerText, editNodeTextBoxEl.value);
-    editNodeTextBoxEl.value = "";
+    graphToLocalStorage();
     renderGraph();
+    // Get html element of new source node. TODO There's undoubtedly a better way of doing this.
+    let newSourceNode = d3.selectAll("g.node").nodes().find(n => n.__data__ === editNodeTextBoxEl.value);
+    setSourceNode(newSourceNode);
 }
 
 // TODO Move event listener logic here.
@@ -24,36 +27,43 @@ function addNode(graph, name) {
     });
 }
 
-// TODO Don't like how this edits g but addNode edits the input graph.
 function editNode(graph, oldNodeName, newNodeName) {
-    // TODO Figure out how to set edges.
     if (oldNodeName === newNodeName) return;
-    // I basically need to recreate the graph unless I want the labels to be different
-    // than the ids.
+    addNode(graph, newNodeName);
 
-    const graphPostEdit = newGraph();
-    for (const node of graph.nodes()) {
-        if (node !== oldNodeName) {
-            addNode(graphPostEdit, node);
-        } else {
-            addNode(graphPostEdit, newNodeName);
-        }
+    // Copy predecessor edges to new node.
+    for (const predecessorName of graph.predecessors(oldNodeName)) {
+        let oldEdge = graph.edge(predecessorName, oldNodeName);
+        let { elem: _, ...newEdge } = oldEdge;
+        graph.setEdge(predecessorName, newNodeName, newEdge);
+    }
+    // Copy successor edges to new node.
+    for (const successorName of graph.successors(oldNodeName)) {
+        let oldEdge = graph.edge(oldNodeName, successorName);
+        let { elem: _, ...newEdge } = oldEdge;
+        graph.setEdge(newNodeName, successorName, newEdge);
     }
 
-    for (const edge of graph.edges()) {
-        newEdge = structuredClone(edge);
-        if (newEdge.v === oldNodeName) { newEdge.v = newNodeName }
-        if (newEdge.w === oldNodeName) { newEdge.w = newNodeName }
-        graphPostEdit.setEdge(newEdge.v, newEdge.w);
-    }
+    graph.removeNode(oldNodeName);
+    // let successors = graph.successors(oldNodeName);
 
-    g = graphPostEdit;
-    graphToLocalStorage();
-    renderGraph();
+    // const graphPostEdit = newGraph();
+    // for (const node of graph.nodes()) {
+    //     if (node !== oldNodeName) {
+    //         addNode(graphPostEdit, node);
+    //     } else {
+    //         addNode(graphPostEdit, newNodeName);
+    //     }
+    // }
 
-    // Get html element of new source node. TODO There's undoubtedly a better way of doing this.
-    let newSourceNode = d3.selectAll("g.node").nodes().find(n => n.__data__ === newNodeName);
-    setSourceNode(newSourceNode);
+    // for (const edge of graph.edges()) {
+    //     newEdge = structuredClone(edge);
+    //     if (newEdge.v === oldNodeName) { newEdge.v = newNodeName }
+    //     if (newEdge.w === oldNodeName) { newEdge.w = newNodeName }
+    //     graphPostEdit.setEdge(newEdge.v, newEdge.w);
+    // }
+
+    // g = graphPostEdit;
 }
 
 // Note this also clears the edit text box. I'll see if that's an issue later.
@@ -149,15 +159,15 @@ const loadResultsBtn = document.getElementById('loadResultsBtn');
 const saveResultsBtn = document.getElementById('saveResultsBtn');
 
 // Create the renderer
-var render = new dagreD3.render();
+const render = new dagreD3.render();
 
 // Set up an SVG group so that we can translate the final graph.
-var svg = d3.select("svg");
-var svgGroup = d3.select("svg g");
+const svg = d3.select("svg");
+const svgGroup = d3.select("svg g");
 
 
 /* Event listeners */
-let zoom = d3.zoom()
+const zoom = d3.zoom()
     .on('zoom', handleZoom);
 
 /* After a click anywhere on screen, if the click is inside the svg but not on a node,
