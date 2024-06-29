@@ -13,8 +13,12 @@
 <body class="clearfix">
     <div>
         <h1>Test</h1>
-        <button id="addNodeBtn" onclick="addNodeBtnFn()">Add node</button>
         <input type="text" id="addNodeTextBox" value="" />
+        <button id="addNodeBtn" onclick="addNodeBtnFn()">Add node</button>
+        <input type="text" id="editNodeTextBox" value="" />
+        <button id="editNodeBtn" onclick="editNodeBtnFn()">Edit node</button>
+    </div>
+    <div>
         <input type="file" name="" id='input_file' onchange="loadFile(this)" hidden>
         <button onclick="open_file()"> Load File </button>
         <script type="text/javascript">
@@ -22,13 +26,12 @@
                 document.getElementById('input_file').click();
             }
         </script>
-
         <button onclick="saveFile()"> Save File </button>
     </div>
 
-    <div class="flex-parent-element">
-        <div class="flex-child-element">Source node:</div>
-        <div id="sourceNodeTextEl" class="flex-child-element"></div>
+    <div>
+        <div>Source node:</div>
+        <div id="sourceNodeTextEl"></div>
     </div>
 
     <svg id="svg-canvas">
@@ -50,6 +53,7 @@
  https://cdnjs.cloudflare.com/ajax/libs/d3/6.2.0/d3.min.js" charset="utf-8"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dagre-d3/0.6.4/dagre-d3.min.js" charset="utf-8"></script>
 <script src="fs-helpers.js"></script>
+<script src="graph-helpers.js"></script>
 <script src="script.js"></script>
 
 </html>
