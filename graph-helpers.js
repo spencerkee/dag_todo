@@ -140,11 +140,6 @@ function topologicalSortHelper(graph, node, visited, stack) {
     stack.push(node);
 }
 
-// https://brunoscheufler.com/blog/2021-12-05-decreasing-graph-complexity-with-transitive-reductions
-function getChildren(graph, node) {
-    return graph.neighbors(node).filter(n => graph.hasEdge(node, n));
-}
-
 function getDescendents(graph, node) {
     function dfs(graph, start) {
         const stack = [start];
@@ -158,7 +153,7 @@ function getDescendents(graph, node) {
                 visited.add(vertex);
                 result.push(vertex);
 
-                for (const child of getChildren(graph, vertex)) {
+                for (const child of graph.successors(node)) {
                     stack.push(child);
                 }
             }
@@ -173,6 +168,11 @@ function getDescendents(graph, node) {
     return descendants;
 }
 
+function getAllUnreachableNodes(graph, node) {
+
+}
+
+// https://brunoscheufler.com/blog/2021-12-05-decreasing-graph-complexity-with-transitive-reductions
 function reduceStoreRenderGraph() {
     function countIncomingEdges(graph, node) {
         return graph.edges().filter(edge => edge.w === node).length;
@@ -211,10 +211,10 @@ function reduceStoreRenderGraph() {
         // Go over all nodes in the graph
         for (const u of graph.nodes()) {
             // Find neighbouring nodes of u
-            const finalChildren = new Set(getChildren(graph, u));
+            const finalChildren = new Set(graph.successors(u));
 
             // Go over all neighbouring nodes (retrieve it once more since we'll modify uNeighbours)
-            for (const v of getChildren(graph, u)) {
+            for (const v of graph.successors(u)) {
                 if (finalChildren.has(v)) {
                     if (!descendants.has(v)) {
                         // Find descendants of v with depth-first search

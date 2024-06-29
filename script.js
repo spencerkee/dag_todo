@@ -208,3 +208,4 @@ editNodeTextBoxEl.addEventListener('keyup', function (e) {
 /* Main */
 
 initGraph();
+updateList();

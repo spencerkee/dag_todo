@@ -8,7 +8,7 @@ function loadFile(input) {
 
     reader.onload = function () {
         g = graphFromJson(reader.result);
-        updateGraph();
+        reduceStoreRenderGraph();
     };
 
     reader.onerror = function () {
