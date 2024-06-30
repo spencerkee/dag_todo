@@ -18,15 +18,18 @@ function editNodeBtnFn() {
 function updateList() {
     // Clear listEl and add g.sources() to listEl
     listEl.innerHTML = '';
+    let nodesToList;
     if (sourceNodeEl === undefined) {
-        g.sources().forEach(function (v) {
-            let li = document.createElement('li');
-            li.textContent = v;
-            listEl.appendChild(li);
-        });
+        nodesToList = g.sources();
     } else {
         debugger;
+        nodesToList = getUnconnectedNodes(g, sourceNodeEl.__data__);
     }
+    nodesToList.forEach(function (v) {
+        let li = document.createElement('li');
+        li.textContent = v;
+        listEl.appendChild(li);
+    });
 }
 
 // TODO Move event listener logic here.
@@ -80,6 +83,7 @@ function nodeClickListener(event) {
     // First click with no source node set.
     if (sourceNodeEl === undefined) {
         setSourceNode(this);
+        updateList();
         return;
     }
     // Self click
@@ -90,6 +94,7 @@ function nodeClickListener(event) {
     g.setEdge(sourceNodeEl.__data__, this.__data__);
     clearSourceNode();
     reduceStoreRenderGraph();
+    updateList();
     // d3.select("#graphLabel").text(this.textContent);
 }
 
@@ -177,6 +182,7 @@ window.addEventListener('click', function (e) {
     if (node_or_null === null && svg_or_null !== null) {
         // Clicked inside box, but not on a node so clear source node.
         clearSourceNode();
+        updateList();
         // Could set the graph label if we want.
         // d3.select("#graphLabel").text("");
     }

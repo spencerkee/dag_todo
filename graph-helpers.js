@@ -140,36 +140,49 @@ function topologicalSortHelper(graph, node, visited, stack) {
     stack.push(node);
 }
 
-function getDescendents(graph, node) {
-    function dfs(graph, start) {
-        const stack = [start];
-        const visited = new Set();
-        const result = [];
+function dfs(graph, start, neighborFunc) {
+    const stack = [start];
+    const visited = new Set();
+    const result = [];
 
-        while (stack.length) {
-            const vertex = stack.pop();
+    while (stack.length) {
+        const vertex = stack.pop();
 
-            if (!visited.has(vertex)) {
-                visited.add(vertex);
-                result.push(vertex);
+        if (!visited.has(vertex)) {
+            visited.add(vertex);
+            result.push(vertex);
 
-                for (const child of graph.successors(node)) {
-                    stack.push(child);
-                }
+            for (const child of graph[neighborFunc](vertex)) {
+                stack.push(child);
             }
         }
-
-        return result;
     }
 
-    let descendants = dfs(graph, node);
+    return result;
+}
+
+function getDescendents(graph, node) {
+    let descendants = dfs(graph, node, 'successors');
     // Remove self
     descendants = descendants.slice(1);
     return descendants;
 }
 
-function getAllUnreachableNodes(graph, node) {
+function getAncestors(graph, node) {
+    let ancestors = dfs(graph, node, 'predecessors');
+    // Remove self
+    ancestors = ancestors.slice(1);
+    return ancestors;
+}
 
+function getUnconnectedNodes(graph, node) {
+    let allNodes = new Set(graph.nodes());
+    let connectedNodes = new Set([node]);
+    debugger;
+    getDescendents(graph, node).forEach(connectedNodes.add, connectedNodes);
+    getAncestors(graph, node).forEach(connectedNodes.add, connectedNodes);
+    let unconnectedNodes = allNodes.difference(connectedNodes);
+    return unconnectedNodes;
 }
 
 // https://brunoscheufler.com/blog/2021-12-05-decreasing-graph-complexity-with-transitive-reductions
