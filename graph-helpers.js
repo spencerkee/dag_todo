@@ -178,7 +178,6 @@ function getAncestors(graph, node) {
 function getUnconnectedNodes(graph, node) {
     let allNodes = new Set(graph.nodes());
     let connectedNodes = new Set([node]);
-    debugger;
     getDescendents(graph, node).forEach(connectedNodes.add, connectedNodes);
     getAncestors(graph, node).forEach(connectedNodes.add, connectedNodes);
     let unconnectedNodes = allNodes.difference(connectedNodes);

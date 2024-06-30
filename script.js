@@ -22,12 +22,20 @@ function updateList() {
     if (sourceNodeEl === undefined) {
         nodesToList = g.sources();
     } else {
-        debugger;
         nodesToList = getUnconnectedNodes(g, sourceNodeEl.__data__);
     }
     nodesToList.forEach(function (v) {
         let li = document.createElement('li');
         li.textContent = v;
+        if (sourceNodeEl !== undefined) {
+            let button = document.createElement('button');
+            button.textContent = "Connect";
+            button.onclick = function () {
+                let htmlNode = d3.selectAll("g.node").nodes().find(n => n.__data__ === v);
+                processNodeClick(v, htmlNode);
+            };
+            li.prepend(button);
+        }
         listEl.appendChild(li);
     });
 }
@@ -79,22 +87,28 @@ function setSourceNode(htmlNode) {
     editNodeTextBoxEl.value = htmlNode.textContent;
 }
 
-function nodeClickListener(event) {
+function processNodeClick(nodeName, htmlNode) {
     // First click with no source node set.
     if (sourceNodeEl === undefined) {
-        setSourceNode(this);
+        setSourceNode(htmlNode);
         updateList();
         return;
     }
     // Self click
-    if (sourceNodeEl.__data__ === this.__data__) {
-        return clearSourceNode();
+    if (sourceNodeEl.__data__ === nodeName) {
+        clearSourceNode();
+        updateList();
+        return;
     }
     // Add edge
-    g.setEdge(sourceNodeEl.__data__, this.__data__);
+    g.setEdge(sourceNodeEl.__data__, nodeName);
     clearSourceNode();
     reduceStoreRenderGraph();
     updateList();
+}
+
+function nodeClickListener(event) {
+    processNodeClick(this.__data__, this);
     // d3.select("#graphLabel").text(this.textContent);
 }
 
