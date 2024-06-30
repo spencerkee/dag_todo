@@ -183,8 +183,6 @@ function getUnconnectedNodes(graph, node) {
     let unconnectedNodes = allNodes.difference(connectedNodes);
     let orderedUnconnectedNodes = topologicalSort(g).filter(n => unconnectedNodes.has(n));
     return orderedUnconnectedNodes;
-    // let x = topologicalSort(g);
-    // return unconnectedNodes;
 }
 
 // https://brunoscheufler.com/blog/2021-12-05-decreasing-graph-complexity-with-transitive-reductions

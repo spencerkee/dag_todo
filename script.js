@@ -178,7 +178,8 @@ function initGraph() {
     } else {
         // Create the input graph
         g = newGraph();
-        setupGraph();
+        // setupGraph();
+        // localStorage.clear();
     }
     reduceStoreRenderGraph();
     initZoom();
@@ -194,8 +195,8 @@ const sourceNodeTextEl = document.getElementById('sourceNodeText');
 const listEl = document.getElementById('list');
 const graphLink = d3.select("#graphLink");
 
-const loadResultsBtn = document.getElementById('loadResultsBtn');
-const saveResultsBtn = document.getElementById('saveResultsBtn');
+const loadFileBtn = document.getElementById('loadFileBtn');
+const saveFileBtn = document.getElementById('saveFileBtn');
 
 // Create the renderer
 const render = new dagreD3.render();

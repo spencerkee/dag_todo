@@ -9,6 +9,8 @@ function loadFile(input) {
     reader.onload = function () {
         g = graphFromJson(reader.result);
         reduceStoreRenderGraph();
+        clearSourceNode();
+        updateList();
     };
 
     reader.onerror = function () {
