@@ -103,11 +103,13 @@ function clearSourceNode() {
     sourceNodeTextEl.innerText = "";
     sourceNodeEl = undefined;
     editNodeTextBoxEl.value = "";
+    sourceNodeTextEl.style.border = "";
 }
 
 function setSourceNode(htmlNode) {
     sourceNodeTextEl.innerText = htmlNode.textContent;
     sourceNodeEl = htmlNode;
+    sourceNodeTextEl.style.border = '0.25em solid red';
     editNodeTextBoxEl.value = htmlNode.textContent;
 }
 
