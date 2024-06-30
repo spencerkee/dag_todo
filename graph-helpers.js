@@ -131,9 +131,9 @@ function topologicalSort(graph) {
 function topologicalSortHelper(graph, node, visited, stack) {
     visited[node] = true;
 
-    for (const neighbor of graph.neighbors(node)) {
+    for (const neighbor of graph.successors(node)) {
         if (!visited[neighbor]) {
-            topologicalSortHelper(neighbor, visited, stack);
+            topologicalSortHelper(graph, neighbor, visited, stack);
         }
     }
 
@@ -181,7 +181,10 @@ function getUnconnectedNodes(graph, node) {
     getDescendents(graph, node).forEach(connectedNodes.add, connectedNodes);
     getAncestors(graph, node).forEach(connectedNodes.add, connectedNodes);
     let unconnectedNodes = allNodes.difference(connectedNodes);
-    return unconnectedNodes;
+    let orderedUnconnectedNodes = topologicalSort(g).filter(n => unconnectedNodes.has(n));
+    return orderedUnconnectedNodes;
+    // let x = topologicalSort(g);
+    // return unconnectedNodes;
 }
 
 // https://brunoscheufler.com/blog/2021-12-05-decreasing-graph-complexity-with-transitive-reductions

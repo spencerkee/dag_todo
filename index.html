@@ -28,16 +28,14 @@
         </script>
         <button onclick="saveFile()"> Save File </button>
     </div>
-
-    <div>
-        <div>Source node:</div>
-        <div id="sourceNodeText"></div>
-    </div>
-
     <svg id="svg-canvas">
         <g></g>
         <text id="graphLabel" x="100" y="190" text-anchor="middle" font-size="16px"></text>
     </svg>
+    <div>
+        <div style="display: inline-block;">Source node: </div>
+        <div id="sourceNodeText" style="display: inline-block;"></div>
+    </div>
     <ul id="list"></ul>
     <!-- <form>
         <label for="inputGraph">Graphviz Definition</label>

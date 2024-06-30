@@ -2,7 +2,9 @@ function addNodeBtnFn() {
     if (!addNodeTextBoxEl.value) return;
     addNode(g, addNodeTextBoxEl.value);
     addNodeTextBoxEl.value = "";
+    graphToLocalStorage();
     renderGraph();
+    updateList();
 }
 
 function editNodeBtnFn() {
@@ -15,6 +17,7 @@ function editNodeBtnFn() {
     setSourceNode(newSourceNode);
 }
 
+// TODO could probably refactor this but not very important
 function updateList() {
     // Clear listEl and add g.sources() to listEl
     listEl.innerHTML = '';
@@ -28,13 +31,34 @@ function updateList() {
         let li = document.createElement('li');
         li.textContent = v;
         if (sourceNodeEl !== undefined) {
-            let button = document.createElement('button');
-            button.textContent = "Connect";
-            button.onclick = function () {
+            // TODO There's got to be a better way of doing this.
+            let parentButton = document.createElement('button');
+            parentButton.textContent = "Add Parent";
+            parentButton.onclick = function () {
+                let originalSourceNodeEl = sourceNodeEl;
+                let tempSourceNodeEl = d3.selectAll("g.node").nodes().find(n => n.__data__ === v);
+                setSourceNode(tempSourceNodeEl);
+                processNodeClick(originalSourceNodeEl.__data__, tempSourceNodeEl);
+                setSourceNode(originalSourceNodeEl);
+                updateList();
+            };
+            li.prepend(parentButton);
+
+            let childButton = document.createElement('button');
+            childButton.textContent = "Add Child";
+            childButton.onclick = function () {
                 let htmlNode = d3.selectAll("g.node").nodes().find(n => n.__data__ === v);
                 processNodeClick(v, htmlNode);
             };
-            li.prepend(button);
+            li.prepend(childButton);
+        } else {
+            let selectButton = document.createElement('button');
+            selectButton.textContent = "Select";
+            selectButton.onclick = function () {
+                let htmlNode = d3.selectAll("g.node").nodes().find(n => n.__data__ === v);
+                processNodeClick(v, htmlNode);
+            };
+            li.prepend(selectButton);
         }
         listEl.appendChild(li);
     });
@@ -96,13 +120,13 @@ function processNodeClick(nodeName, htmlNode) {
     }
     // Self click
     if (sourceNodeEl.__data__ === nodeName) {
-        clearSourceNode();
-        updateList();
+        // clearSourceNode();
+        // updateList();
         return;
     }
     // Add edge
     g.setEdge(sourceNodeEl.__data__, nodeName);
-    clearSourceNode();
+    // clearSourceNode();
     reduceStoreRenderGraph();
     updateList();
 }
@@ -209,6 +233,7 @@ window.addEventListener('keyup', function (e) {
             g.removeNode(sourceNodeEl.__data__);
             reduceStoreRenderGraph();
             clearSourceNode();
+            updateList();
         }
     }
 });
