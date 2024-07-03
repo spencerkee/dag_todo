@@ -102,15 +102,17 @@ function editNode(graph, oldNodeName, newNodeName) {
 function clearSourceNode() {
     sourceNodeTextEl.innerText = "";
     sourceNodeEl = undefined;
-    editNodeTextBoxEl.value = "";
+    // editNodeTextBoxEl.value = "";
     sourceNodeTextEl.style.border = "";
+    triggerListeners('sourceNode');
 }
 
 function setSourceNode(htmlNode) {
     sourceNodeTextEl.innerText = htmlNode.textContent;
     sourceNodeEl = htmlNode;
     sourceNodeTextEl.style.border = '0.25em solid red';
-    editNodeTextBoxEl.value = htmlNode.textContent;
+    // editNodeTextBoxEl.value = htmlNode.textContent;
+    triggerListeners('sourceNode');
 }
 
 function processNodeClick(nodeName, htmlNode) {
@@ -252,6 +254,57 @@ editNodeTextBoxEl.addEventListener('keyup', function (e) {
         editNodeBtnFn();
     }
 });
+
+// E.g. sourceNode
+let listenerArrays = {
+    'sourceNode': []
+};
+
+function addListener(eventType, listenerCallback) {
+    if (!listenerArrays[eventType]) {
+        listenerArrays[eventType] = [];
+    }
+    listenerArrays[eventType].push(listenerCallback);
+}
+
+// TODO have not tested.
+function removeListener(eventType, listenerCallback) {
+    if (!listenerArrays[eventType]) {
+        return;
+    }
+    let index = listenerArrays[eventType].indexOf(listenerCallback);
+    if (index !== -1) {
+        listenerArrays[eventType].splice(index, 1);
+    }
+}
+
+function triggerListeners(eventType) {
+    if (!listenerArrays[eventType]) {
+        console.log(`No listeners for event type ${eventType}`);
+        return;
+    }
+    for (let listener of listenerArrays[eventType]) {
+        listener();
+    }
+}
+
+function editNodeTextBoxSourceNodeListener() {
+    if (sourceNodeEl === undefined) {
+        editNodeTextBoxEl.value = "";
+        return;
+    }
+    editNodeTextBoxEl.value = sourceNodeEl.textContent;
+}
+addListener('sourceNode', editNodeTextBoxSourceNodeListener);
+
+// function setSourceNode(htmlNode) {
+//     sourceNodeTextEl.innerText = htmlNode.textContent;
+//     sourceNodeEl = htmlNode;
+//     sourceNodeTextEl.style.border = '0.25em solid red';
+//     for (let listener of listeners['sourceNode']) {
+//         listener();
+//     }
+// }
 
 /* Main */
 
