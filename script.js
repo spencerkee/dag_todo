@@ -108,9 +108,8 @@ function clearSourceNode() {
 }
 
 function setSourceNode(htmlNode) {
-    sourceNodeTextEl.innerText = htmlNode.textContent;
+
     sourceNodeEl = htmlNode;
-    sourceNodeTextEl.style.border = '0.25em solid red';
     // editNodeTextBoxEl.value = htmlNode.textContent;
     triggerListeners('sourceNode');
 }
@@ -288,6 +287,18 @@ function triggerListeners(eventType) {
     }
 }
 
+/* Source Node Listeners */
+function sourceNodeDisplaySourceNodeListener() {
+    if (sourceNodeEl === undefined) {
+        sourceNodeTextEl.innerText = "";
+        sourceNodeTextEl.style.border = "";
+        return;
+    }
+    sourceNodeTextEl.innerText = sourceNodeEl.textContent;
+    sourceNodeTextEl.style.border = '0.25em solid red';
+}
+addListener('sourceNode', sourceNodeDisplaySourceNodeListener);
+
 function editNodeTextBoxSourceNodeListener() {
     if (sourceNodeEl === undefined) {
         editNodeTextBoxEl.value = "";
@@ -296,6 +307,7 @@ function editNodeTextBoxSourceNodeListener() {
     editNodeTextBoxEl.value = sourceNodeEl.textContent;
 }
 addListener('sourceNode', editNodeTextBoxSourceNodeListener);
+
 
 // function setSourceNode(htmlNode) {
 //     sourceNodeTextEl.innerText = htmlNode.textContent;
