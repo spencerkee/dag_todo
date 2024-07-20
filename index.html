@@ -1,58 +1,16 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <link rel="shortcut icon" type="image/ico" href="/src/assets/favicon.ico" />
+    <title>Solid App</title>
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
 
-<head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DAG Todo</title>
-</head>
-<link rel="stylesheet" href="style.css" />
-<title>Test</title>
-
-<body class="clearfix">
-    <div>
-        <h1>Test</h1>
-        <input type="text" id="addNodeTextBox" value="" />
-        <button id="addNodeBtn" onclick="addNodeBtnFn()">Add node</button>
-        <input type="text" id="editNodeTextBox" value="" />
-        <button id="editNodeBtn" onclick="editNodeBtnFn()">Edit node</button>
-    </div>
-    <div>
-        <input type="file" name="" id='input_file' onchange="loadFile(this)" hidden>
-        <button onclick="open_file()"> Load File </button>
-        <script type="text/javascript">
-            function open_file() {
-                document.getElementById('input_file').click();
-            }
-        </script>
-        <button onclick="saveFile()"> Save File </button>
-    </div>
-    <svg id="svg-canvas">
-        <g></g>
-        <text id="graphLabel" x="100" y="190" text-anchor="middle" font-size="16px"></text>
-    </svg>
-    <div>
-        <div style="display: inline-block;">Source node: </div>
-        <div id="sourceNodeText" style="display: inline-block;"></div>
-    </div>
-    <ul id="list"></ul>
-    <!-- <form>
-        <label for="inputGraph">Graphviz Definition</label>
-        <textarea id="inputGraph" rows="5" style="display: block">
-   </textarea> -->
-
-    <a id="graphLink">Link for this graph</a>
-    <!-- </form> -->
-
-</body>
-
-<!-- TODO minify -->
-<script src="
- https://cdnjs.cloudflare.com/ajax/libs/d3/6.2.0/d3.js" charset="utf-8"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/dagre-d3/0.6.4/dagre-d3.js" charset="utf-8"></script>
-<script src="fs-helpers.js"></script>
-<script src="graph-helpers.js"></script>
-<script src="script.js"></script>
-
+    <script src="/src/index.jsx" type="module"></script>
+  </body>
 </html>

@@ -1,49 +1,34 @@
-# dag_todo
+## Usage
 
-[ "rank=same for roots", "pres key to swap between deps/priority", "editing nodes via side textbox", "animations or reduced movement", "zoom to fit", "descriptions", "topological sort of potential connections to make", "show remaining possible comparisons for node", "fix zoom on load issue", "ctrl + z", … ]
+Those templates dependencies are maintained via [pnpm](https://pnpm.io) via `pnpm up -Lri`.
 
-I need a way to look up a node from the label
-Actually not necessarily.
+This is the reason you see a `pnpm-lock.yaml`. That being said, any package manager will work. This file can be safely be removed once you clone a template.
 
-If I need a hash can do https://stackoverflow.com/questions/32649704/how-to-generate-hash-from-timestamp
+```bash
+$ npm install # or pnpm install or yarn install
+```
 
-Hmm, the assumption that all nodes are unique is actually not the best. Probably need to move to this
-id based method eventually.
+### Learn more on the [Solid Website](https://solidjs.com) and come chat with us on our [Discord](https://discord.com/invite/solidjs)
 
-Okay whats the ideal flow?
-- Some way of getting the dagre node given the label.
-- Some way of editing a dagre node given the ID.
+## Available Scripts
 
-The label doesn't need to be a hash imediately. That makes things hard to read.
-Alternatively I can think of an easier way of getting all the parents and children of a node.
+In the project directory, you can run:
 
-oh wow when you use graph.edge() or graph.node() there's an elem property
+### `npm run dev` or `npm start`
 
-- g.sources()
-    - all nodes with no predecessors
-- g.sinks()
-    - all nodes with no successors i.e. leaves
-- g.setParent(v, parent)
-- g.parent(v)
-    - only applies in compound graphs I think?
-- g.children(v)
-    - only applies in compound graphs I think?
-- g.predecessors(v)
-    - imediate predecessors
-- g.successors(v)
-    - imediate successors
-- g.neighbors(v)
-    - predecessors and successors
+Runs the app in the development mode.<br>
+Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
 
-<!-- 
-TODO
-https://www.d3indepth.com/zoom-and-pan/
-https://stackoverflow.com/questions/36667194/dagre-d3-js-zoom-fit-to-all-contents
-https://using-d3js.com/08_01_events.html#h_42s6Es9avmjavasc good looking website
+The page will reload if you make edits.<br>
 
-rank 
-https://github.com/dagrejs/dagre/pull/90
-https://github.com/dagrejs/dagre/issues/54
-https://github.com/dagrejs/dagre-d3/issues/165
-https://github.com/dagrejs/dagre/pull/271
- -->
+### `npm run build`
+
+Builds the app for production to the `dist` folder.<br>
+It correctly bundles Solid in production mode and optimizes the build for the best performance.
+
+The build is minified and the filenames include the hashes.<br>
+Your app is ready to be deployed!
+
+## Deployment
+
+You can deploy the `dist` folder to any static host provider (netlify, surge, now, etc.)
