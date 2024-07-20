@@ -17,53 +17,6 @@ function editNodeBtnFn() {
     setSourceNode(newSourceNode);
 }
 
-// TODO could probably refactor this but not very important
-function updateList() {
-    // Clear listEl and add g.sources() to listEl
-    listEl.innerHTML = '';
-    let nodesToList;
-    if (sourceNodeEl === undefined) {
-        nodesToList = g.sources();
-    } else {
-        nodesToList = getUnconnectedNodes(g, sourceNodeEl.__data__);
-    }
-    nodesToList.forEach(function (v) {
-        let li = document.createElement('li');
-        li.textContent = v;
-        if (sourceNodeEl !== undefined) {
-            // TODO There's got to be a better way of doing this.
-            let parentButton = document.createElement('button');
-            parentButton.textContent = "Add Parent";
-            parentButton.onclick = function () {
-                let originalSourceNodeEl = sourceNodeEl;
-                let tempSourceNodeEl = d3.selectAll("g.node").nodes().find(n => n.__data__ === v);
-                setSourceNode(tempSourceNodeEl);
-                processNodeClick(originalSourceNodeEl.__data__, tempSourceNodeEl);
-                setSourceNode(originalSourceNodeEl);
-                updateList();
-            };
-            li.prepend(parentButton);
-
-            let childButton = document.createElement('button');
-            childButton.textContent = "Add Child";
-            childButton.onclick = function () {
-                let htmlNode = d3.selectAll("g.node").nodes().find(n => n.__data__ === v);
-                processNodeClick(v, htmlNode);
-            };
-            li.prepend(childButton);
-        } else {
-            let selectButton = document.createElement('button');
-            selectButton.textContent = "Select";
-            selectButton.onclick = function () {
-                let htmlNode = d3.selectAll("g.node").nodes().find(n => n.__data__ === v);
-                processNodeClick(v, htmlNode);
-            };
-            li.prepend(selectButton);
-        }
-        listEl.appendChild(li);
-    });
-}
-
 // TODO Move event listener logic here.
 // Note that addNode recreates the node it doesn't copy over properties.
 // I'll see if that's an issue later.
@@ -118,7 +71,7 @@ function processNodeClick(nodeName, htmlNode) {
     // First click with no source node set.
     if (sourceNodeEl === undefined) {
         setSourceNode(htmlNode);
-        updateList();
+        // updateList(); // This is done in the next step.
         return;
     }
     // Self click
@@ -256,7 +209,8 @@ editNodeTextBoxEl.addEventListener('keyup', function (e) {
 
 // E.g. sourceNode
 let listenerArrays = {
-    'sourceNode': []
+    'sourceNode': [],
+    // 'list': []
 };
 
 function addListener(eventType, listenerCallback) {
@@ -287,8 +241,7 @@ function triggerListeners(eventType) {
     }
 }
 
-/* Source Node Listeners */
-function sourceNodeDisplaySourceNodeListener() {
+function reflectSourceNodeDisplay() {
     if (sourceNodeEl === undefined) {
         sourceNodeTextEl.innerText = "";
         sourceNodeTextEl.style.border = "";
@@ -297,7 +250,7 @@ function sourceNodeDisplaySourceNodeListener() {
     sourceNodeTextEl.innerText = sourceNodeEl.textContent;
     sourceNodeTextEl.style.border = '0.25em solid red';
 }
-addListener('sourceNode', sourceNodeDisplaySourceNodeListener);
+addListener('sourceNode', reflectSourceNodeDisplay);
 
 function editNodeTextBoxSourceNodeListener() {
     if (sourceNodeEl === undefined) {
@@ -308,6 +261,53 @@ function editNodeTextBoxSourceNodeListener() {
 }
 addListener('sourceNode', editNodeTextBoxSourceNodeListener);
 
+// TODO could probably refactor this but not very important
+function reflectList() {
+    // Clear listEl and add g.sources() to listEl
+    listEl.innerHTML = '';
+    let nodesToList;
+    if (sourceNodeEl === undefined) {
+        nodesToList = g.sources();
+    } else {
+        nodesToList = getUnconnectedNodes(g, sourceNodeEl.__data__);
+    }
+    nodesToList.forEach(function (v) {
+        let li = document.createElement('li');
+        li.textContent = v;
+        if (sourceNodeEl !== undefined) {
+            // TODO There's got to be a better way of doing this.
+            let parentButton = document.createElement('button');
+            parentButton.textContent = "Add Parent";
+            parentButton.onclick = function () {
+                let originalSourceNodeEl = sourceNodeEl;
+                let tempSourceNodeEl = d3.selectAll("g.node").nodes().find(n => n.__data__ === v);
+                setSourceNode(tempSourceNodeEl);
+                processNodeClick(originalSourceNodeEl.__data__, tempSourceNodeEl);
+                setSourceNode(originalSourceNodeEl);
+                updateList();
+            };
+            li.prepend(parentButton);
+
+            let childButton = document.createElement('button');
+            childButton.textContent = "Add Child";
+            childButton.onclick = function () {
+                let htmlNode = d3.selectAll("g.node").nodes().find(n => n.__data__ === v);
+                processNodeClick(v, htmlNode);
+            };
+            li.prepend(childButton);
+        } else {
+            let selectButton = document.createElement('button');
+            selectButton.textContent = "Select";
+            selectButton.onclick = function () {
+                let htmlNode = d3.selectAll("g.node").nodes().find(n => n.__data__ === v);
+                processNodeClick(v, htmlNode);
+            };
+            li.prepend(selectButton);
+        }
+        listEl.appendChild(li);
+    });
+}
+addListener('sourceNode', reflectList);
 
 // function setSourceNode(htmlNode) {
 //     sourceNodeTextEl.innerText = htmlNode.textContent;
@@ -322,3 +322,4 @@ addListener('sourceNode', editNodeTextBoxSourceNodeListener);
 
 initGraph();
 updateList();
+
