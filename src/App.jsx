@@ -107,9 +107,126 @@ function GraphSvg(graph) {
 //   );
 // }
 
-function addNode(g, node) {
-  g.setNode(node, { label: node });
+/* Start graph functions */
+
+function addNode(graph, name) {
+  graph.setNode(name, {
+    label: name,
+    // Round the corners of the nodes
+    rx: 5,
+    ry: 5,
+  });
 }
+
+function dfs(graph, start, neighborFunc) {
+  const stack = [start];
+  const visited = new Set();
+  const result = [];
+
+  while (stack.length) {
+    const vertex = stack.pop();
+
+    if (!visited.has(vertex)) {
+      visited.add(vertex);
+      result.push(vertex);
+
+      for (const child of graph[neighborFunc](vertex)) {
+        stack.push(child);
+      }
+    }
+  }
+
+  return result;
+}
+
+function getUnconnectedNodes(graph, node) {
+  let allNodes = new Set(graph.nodes());
+  let connectedNodes = new Set([node]);
+  getDescendents(graph, node).forEach(connectedNodes.add, connectedNodes);
+  getAncestors(graph, node).forEach(connectedNodes.add, connectedNodes);
+  let unconnectedNodes = allNodes.difference(connectedNodes);
+  let orderedUnconnectedNodes = topologicalSort(g).filter(n => unconnectedNodes.has(n));
+  return orderedUnconnectedNodes;
+}
+
+function getDescendents(graph, node) {
+  let descendants = dfs(graph, node, 'successors');
+  // Remove self
+  descendants = descendants.slice(1);
+  return descendants;
+}
+
+function getAncestors(graph, node) {
+  let ancestors = dfs(graph, node, 'predecessors');
+  // Remove self
+  ancestors = ancestors.slice(1);
+  return ancestors;
+}
+
+function countIncomingEdges(graph, node) {
+  return graph.edges().filter(edge => edge.w === node).length;
+}
+
+function countIncomingEdgesForNodes(graph) {
+  const nodeIncomingEdges = new Map();
+
+  for (const n of graph.nodes()) {
+    nodeIncomingEdges.set(n, countIncomingEdges(graph, n));
+  }
+
+  return nodeIncomingEdges;
+}
+
+function performTransitiveReduction(graph) {
+  // Topologically sort the graph
+  // const sortedVertices = topologicalSort(graph);
+
+  // Initialize the transitive reduction graph
+  const transitiveReduction = newGraph();
+
+  // Iterate over the sorted vertices in reverse order
+  for (const vertex of graph.nodes()) {
+    // Add the vertex to its own transitive closure (ignore this)
+    addNode(transitiveReduction, vertex);
+  }
+
+  let descendants = new Map();
+  let checkCount = countIncomingEdgesForNodes(graph);
+
+  // Go over all nodes in the graph
+  for (const u of graph.nodes()) {
+    // Find neighbouring nodes of u
+    const finalChildren = new Set(graph.successors(u));
+
+    // Go over all neighbouring nodes (retrieve it once more since we'll modify uNeighbours)
+    for (const v of graph.successors(u)) {
+      if (finalChildren.has(v)) {
+        if (!descendants.has(v)) {
+          // Find descendants of v with depth-first search
+          const walkedEdges = new Set(getDescendents(graph, v));
+          descendants.set(v, walkedEdges);
+        }
+        // Delete all descendants of v from uNeighbours
+        for (const d of descendants.get(v) || []) {
+          finalChildren.delete(d);
+        }
+      }
+
+      checkCount.set(v, checkCount[v] - 1);
+      if (checkCount.get(v) === 0) {
+        descendants.delete(v);
+      }
+    }
+    // Add edges to our transitive reduction again
+    for (const v of finalChildren) {
+      transitiveReduction.setEdge(u, v);
+    }
+  }
+
+  return transitiveReduction;
+}
+
+/* End graph functions */
 
 const App = () => {
   const [newTitle, setTitle] = createSignal("");
@@ -122,11 +239,15 @@ const App = () => {
 
   let dataGraph = newGraph();
 
+  // Render the graph into an svg
   createEffect(() => {
     let _ = numEdits();
+    console.log('reduce');
+    dataGraph = performTransitiveReduction(dataGraph);
     console.log('render');
     renderer(d3.select(svgGroup), dataGraph);
   })
+
   const addTodo = (e) => {
     e.preventDefault();
     batch(() => {
