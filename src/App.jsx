@@ -228,8 +228,34 @@ function performTransitiveReduction(graph) {
 
 /* End graph functions */
 
+/* Start of non-graph functions */
+
+// returns if the element or one of its ancestors matches the selector, return the matching
+// element or ancestor else null.
+// https://stackoverflow.com/questions/16863917/check-if-class-exists-somewhere-in-parent
+function elementOrParentMatchesSelector(element, selector) {
+  // This is a race condition with removing redundant edges I think?
+  if (element === null) return null;
+  // Probably at the level of the HTML object at this point.
+  if (typeof element.matches !== 'function') return null;
+  if (element.matches(selector)) return element;
+  // No parent
+  if (element.parentNode === undefined) return null;
+  return elementOrParentMatchesSelector(element.parentNode, selector);
+}
+/* End of non-graph functions */
+
+/* Start of components */
+// function SourceNode(sourceNode) {
+//   return <div>Source Node: {sourceNode()}</div>;
+// }
+
+
+/* End of components */
+
 const App = () => {
   const [newTitle, setTitle] = createSignal("");
+  const [sourceNode, setSourceNode] = createSignal("asdf");
   const [numEdits, setNumEdits] = createSignal(0);
   console.log('App');
 
@@ -238,6 +264,45 @@ const App = () => {
   const renderer = new dagreD3.render();
 
   let dataGraph = newGraph();
+
+  // Set up an SVG group so that we can translate the final graph.
+  let svgCanvas;
+  let svgGroup;
+
+  // returns if the element or one of its ancestors matches the selector, return the matching
+  // element or ancestor else null.
+  // https://stackoverflow.com/questions/16863917/check-if-class-exists-somewhere-in-parent
+  function elementOrParentMatchesSelector(element, selector) {
+    // This is a race condition with removing redundant edges I think?
+    if (element === null) return null;
+    // Probably at the level of the HTML object at this point.
+    if (typeof element.matches !== 'function') return null;
+    if (element.matches(selector)) return element;
+    // No parent
+    if (element.parentNode === undefined) return null;
+    return elementOrParentMatchesSelector(element.parentNode, selector);
+  }
+
+  function genericClickListener(e) {
+    let node_or_null = elementOrParentMatchesSelector(e.target, 'g.node');
+    // TODO Could do this more efficiently by doing this in the above step.
+    let svg_or_null = elementOrParentMatchesSelector(e.target, '#svg-canvas');
+
+    if (node_or_null === null && svg_or_null !== null) {
+      // Clicked inside box, but not on a node so clear source node.
+      // clearSourceNode();
+      setSourceNode("");
+      // updateList();
+
+      // Could set the graph label if we want.
+      // d3.select("#graphLabel").text("");
+    }
+  }
+
+  /* After a click anywhere on screen, if the click is inside the svg but not on a node,
+  then clear the source node. */
+  https://stackoverflow.com/questions/36695438/detect-click-outside-div-using-javascript
+  window.addEventListener('click', genericClickListener);
 
   // Render the graph into an svg
   createEffect(() => {
@@ -261,10 +326,6 @@ const App = () => {
       setNumEdits(numEdits() + 1);
     });
   };
-
-  // Set up an SVG group so that we can translate the final graph.
-  let svgCanvas;
-  let svgGroup;
 
   onMount(() => {
     console.log('mount');
@@ -290,6 +351,7 @@ const App = () => {
       <svg id="svg-canvas" ref={svgCanvas}>
         <g id="svg-g" ref={svgGroup}></g>
       </svg>
+      <div>Source Node: {sourceNode()}</div>;
       {/*</Portal>*/}
       {/*<form onSubmit={addTodo}>
         <input
