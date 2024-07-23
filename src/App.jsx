@@ -1,6 +1,6 @@
 import * as d3 from "d3";
 import dagreD3 from "dagre-d3/dist/dagre-d3";
-import { createEffect, createSignal, onMount } from "solid-js";
+import { batch, createEffect, createSignal, onMount } from "solid-js";
 import { createMutable, createStore } from "solid-js/store";
 import "./index.css";
 
@@ -80,14 +80,6 @@ function setupGraph(g) {
   g.setEdge(0, 1);
 }
 
-function NeighborList(graph) {
-
-}
-
-function RootList(graph) {
-
-}
-
 function GraphSvg(graph) {
   let g = newGraph();
   setupGraph(g);
@@ -115,14 +107,12 @@ function GraphSvg(graph) {
 //   );
 // }
 
+function addNode(g, node) {
+  g.setNode(node, { label: node });
+}
+
 const App = () => {
   const [newTitle, setTitle] = createSignal("");
-  // const [dataGraph, setDataGraph] = createLocalStore("graph", newSimpleGraph());
-  // const [dataGraph, setDataGraph] = createLocalMutable("graph", newGraph());
-  // const dataGraph = createMutable(newGraph());
-  // const dataGraph = createMutable({me: []});
-  // const [dataGraph, setDataGraph] = createStore(newGraph());
-  // const [numEdits, setNumEdits] = createLocalStore("numEdits", 0);
   const [numEdits, setNumEdits] = createSignal(0);
   console.log('App');
 
@@ -133,21 +123,23 @@ const App = () => {
   let dataGraph = newGraph();
 
   createEffect(() => {
-    debugger;
     let _ = numEdits();
     console.log('render');
     renderer(d3.select(svgGroup), dataGraph);
   })
-  // const addTodo = (e) => {
-  //   e.preventDefault();
-  //   batch(() => {
-  //     setTodos(todos.length, {
-  //       title: newTitle(),
-  //       done: false,
-  //     });
-  //     setTitle("");
-  //   });
-  // };
+  const addTodo = (e) => {
+    e.preventDefault();
+    batch(() => {
+
+      // setTodos(todos.length, {
+      //   title: newTitle(),
+      //   done: false,
+      // });
+      addNode(dataGraph, newTitle());
+      setTitle("");
+      setNumEdits(numEdits() + 1);
+    });
+  };
 
   // Set up an SVG group so that we can translate the final graph.
   let svgCanvas;
@@ -155,7 +147,7 @@ const App = () => {
 
   onMount(() => {
     console.log('mount');
-    dataGraph.setNode(0, { label: "TOP", class: "type-TOP" });
+    setupGraph(dataGraph);
     setNumEdits(numEdits() + 1);
   });
 
@@ -164,7 +156,7 @@ const App = () => {
       <h3>TODO Dag</h3>
       <button onClick={() => saveFile(appState)}>Save File</button>
       <button>Load File</button>
-      <form>
+      <form onSubmit={addTodo}>
         <input
           placeholder="enter todo and click +"
           required
