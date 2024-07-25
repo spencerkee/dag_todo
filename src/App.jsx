@@ -229,7 +229,6 @@ function performTransitiveReduction(graph) {
 /* End graph functions */
 
 /* Start of non-graph functions */
-
 // returns if the element or one of its ancestors matches the selector, return the matching
 // element or ancestor else null.
 // https://stackoverflow.com/questions/16863917/check-if-class-exists-somewhere-in-parent
@@ -243,6 +242,53 @@ function elementOrParentMatchesSelector(element, selector) {
   if (element.parentNode === undefined) return null;
   return elementOrParentMatchesSelector(element.parentNode, selector);
 }
+
+function genericClickListener(e) {
+  console.log('click in window');
+  let node_or_null = elementOrParentMatchesSelector(e.target, 'g.node');
+  // TODO Could do this more efficiently by doing this in the above step.
+  let svg_or_null = elementOrParentMatchesSelector(e.target, '#svg-canvas');
+
+  if (node_or_null === null && svg_or_null !== null) {
+    // Clicked inside box, but not on a node so clear source node.
+    // clearSourceNode();
+    console.log('window clearing source node');
+    setSourceNode(undefined);
+    // updateList();
+
+    // Could set the graph label if we want.
+    // d3.select("#graphLabel").text("");
+  }
+}
+
+function processNodeClick(nodeName) {
+  // First click with no source node set.
+  if (sourceNode() === undefined) {
+    setSourceNode(nodeName);
+    // updateList(); // This is done in the next step.
+    return;
+  }
+
+  // Clear on self click
+  if (sourceNode() === nodeName) {
+    setSourceNode(undefined);
+    return;
+  }
+
+  // Add edge
+  console.log(`Adding edge from '${sourceNode()}' to '${nodeName}'`);
+  renderGraph.setEdge(sourceNode(), nodeName);
+  // Don't do the below in case you want to set multiple children
+  // setSourceNode(undefined);
+
+  setNumEdits(numEdits() + 1);
+}
+
+function nodeClickListener(nodeLabelOrIdOrNotSure) {
+  console.log('node clicked', nodeLabelOrIdOrNotSure);
+  processNodeClick(nodeLabelOrIdOrNotSure, sourceNode, setSourceNode, numEdits, setNumEdits);
+}
+
 /* End of non-graph functions */
 
 /* Start of components */
@@ -252,96 +298,36 @@ function elementOrParentMatchesSelector(element, selector) {
 
 /* End of components */
 
-
+// Global signals. TODO should probably use context in the future.
+const [newTitle, setTitle] = createSignal("");
+const [sourceNode, setSourceNode] = createSignal("asdf");
+const [numEdits, setNumEdits] = createSignal(0);
 
 const App = () => {
-  const [newTitle, setTitle] = createSignal("");
-  const [sourceNode, setSourceNode] = createSignal("asdf");
-  const [numEdits, setNumEdits] = createSignal(0);
   console.log('App');
 
   let svgGroup2 = d3.select("svg g");
   // Create the renderer
   const renderer = new dagreD3.render();
 
-  let dataGraph = newGraph();
+  let renderGraph = newGraph();
 
   // Set up an SVG group so that we can translate the final graph.
   let svgCanvas;
   let svgGroup;
-
-  // returns if the element or one of its ancestors matches the selector, return the matching
-  // element or ancestor else null.
-  // https://stackoverflow.com/questions/16863917/check-if-class-exists-somewhere-in-parent
-  function elementOrParentMatchesSelector(element, selector) {
-    // This is a race condition with removing redundant edges I think?
-    if (element === null) return null;
-    // Probably at the level of the HTML object at this point.
-    if (typeof element.matches !== 'function') return null;
-    if (element.matches(selector)) return element;
-    // No parent
-    if (element.parentNode === undefined) return null;
-    return elementOrParentMatchesSelector(element.parentNode, selector);
-  }
-
-  function genericClickListener(e) {
-    console.log('click in window');
-    let node_or_null = elementOrParentMatchesSelector(e.target, 'g.node');
-    // TODO Could do this more efficiently by doing this in the above step.
-    let svg_or_null = elementOrParentMatchesSelector(e.target, '#svg-canvas');
-
-    if (node_or_null === null && svg_or_null !== null) {
-      // Clicked inside box, but not on a node so clear source node.
-      // clearSourceNode();
-      console.log('window clearing source node');
-      setSourceNode(undefined);
-      // updateList();
-
-      // Could set the graph label if we want.
-      // d3.select("#graphLabel").text("");
-    }
-  }
 
   /* After a click anywhere on screen, if the click is inside the svg but not on a node,
   then clear the source node. */
   https://stackoverflow.com/questions/36695438/detect-click-outside-div-using-javascript
   window.addEventListener('click', genericClickListener);
 
-  function processNodeClick(nodeName) {
-    // First click with no source node set.
-    if (sourceNode() === undefined) {
-      setSourceNode(nodeName);
-      // updateList(); // This is done in the next step.
-      return;
-    }
-
-    // Clear on self click
-    if (sourceNode() === nodeName) {
-      setSourceNode(undefined);
-      return;
-    }
-
-    // Add edge
-    console.log(`Adding edge from '${sourceNode()}' to '${nodeName}'`);
-    dataGraph.setEdge(sourceNode(), nodeName);
-    // Don't do the below in case you want to set multiple children
-    // setSourceNode(undefined);
-
-    setNumEdits(numEdits() + 1);
-  }
-
-  function nodeClickListener(nodeLabelOrIdOrNotSure) {
-    console.log('node clicked', nodeLabelOrIdOrNotSure);
-    processNodeClick(nodeLabelOrIdOrNotSure);
-  }
-
   // Render the graph into an svg
   createEffect(() => {
     let _ = numEdits();
     console.log('reduce');
-    dataGraph = performTransitiveReduction(dataGraph);
+    renderGraph = performTransitiveReduction(renderGraph);
     console.log('render');
-    renderer(d3.select(svgGroup), dataGraph);
+    renderer(d3.select(svgGroup), renderGraph);
 
     // Add event listeners
     /*
@@ -367,7 +353,7 @@ const App = () => {
       //   title: newTitle(),
       //   done: false,
       // });
-      addNode(dataGraph, newTitle());
+      addNode(renderGraph, newTitle());
       setTitle("");
       setNumEdits(numEdits() + 1);
     });
@@ -375,7 +361,7 @@ const App = () => {
 
   onMount(() => {
     console.log('mount');
-    setupGraph(dataGraph);
+    setupGraph(renderGraph);
     setNumEdits(numEdits() + 1);
   });
 
@@ -393,12 +379,10 @@ const App = () => {
         />
         <button>+</button>
       </form>
-      {/*<Portal>*/}
       <svg id="svg-canvas" ref={svgCanvas}>
         <g id="svg-g" ref={svgGroup}></g>
       </svg>
       <div>Source Node: {sourceNode()}</div>
-      {/*</Portal>*/}
       {/*<form onSubmit={addTodo}>
         <input
           placeholder="enter todo and click +"
