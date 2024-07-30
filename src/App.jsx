@@ -2,6 +2,7 @@ import * as d3 from "d3";
 import dagreD3 from "dagre-d3/dist/dagre-d3";
 import { batch, createEffect, createSignal, onMount } from "solid-js";
 import { createMutable, createStore } from "solid-js/store";
+import DataGraph from "./data-graph";
 import "./index.css";
 
 function removeIndex(array, index) {
@@ -305,6 +306,15 @@ const [numEdits, setNumEdits] = createSignal(0);
 
 const App = () => {
   console.log('App');
+
+  let dataGraph = new DataGraph();
+  let id1 = dataGraph.addNode("a");
+  let id2 = dataGraph.addNode("b");
+  dataGraph.addEdge(id1, id2, { label: "cat1" })
+  dataGraph.removeNode(id1);
+  console.log(dataGraph);
+  console.log(dataGraph.getNodeIdByLabel('b'));
+  console.log(dataGraph.getNodeIdByLabel('a'));
 
   let svgGroup2 = d3.select("svg g");
   // Create the renderer
