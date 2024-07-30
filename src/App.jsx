@@ -109,16 +109,6 @@ function GraphSvg(graph) {
 // }
 
 /* Start graph functions */
-
-function addNode(graph, name) {
-  graph.setNode(name, {
-    label: name,
-    // Round the corners of the nodes
-    rx: 5,
-    ry: 5,
-  });
-}
-
 function dfs(graph, start, neighborFunc) {
   const stack = [start];
   const visited = new Set();
@@ -227,6 +217,25 @@ function performTransitiveReduction(graph) {
   return transitiveReduction;
 }
 
+function convertDataGraphToDagre(dataGraph) {
+  let g = newGraph();
+
+  for (const [id, nodeAttrs] of dataGraph.nodes.entries()) {
+    g.setNode(id, {
+      ...nodeAttrs,
+      // Round the corners of the nodes
+      rx: 5,
+      ry: 5,
+    });
+  }
+
+  for (const [edge, edgeAttrs] of dataGraph.edges.entries()) {
+    let [source, target] = edge.split(',');
+    g.setEdge(source, target, edgeAttrs);
+  }
+
+  return g;
+}
 /* End graph functions */
 
 /* Start of non-graph functions */
@@ -308,19 +317,30 @@ const App = () => {
   console.log('App');
 
   let dataGraph = new DataGraph();
-  let id1 = dataGraph.addNode("a");
-  let id2 = dataGraph.addNode("b");
-  dataGraph.addEdge(id1, id2, { label: "cat1" })
-  dataGraph.removeNode(id1);
+  let aId = dataGraph.addNode("a");
+  let bId = dataGraph.addNode("b");
+  let cId = dataGraph.addNode("c");
+  dataGraph.addEdge(aId, bId, {
+    style: "stroke: #f66; stroke-width: 3px; stroke-dasharray: 5, 5;",
+    arrowheadStyle: "fill: #f66"
+  });
+  dataGraph.addEdge(bId, cId, {
+    label: "A to C",
+    labelStyle: "font-style: italic; text-decoration: underline;"
+  });
+  dataGraph.addEdge(aId, cId, {
+    label: "line interpolation different",
+    curve: d3.curveBasis
+  });
+  // dataGraph.removeNode(id1);
   console.log(dataGraph);
-  console.log(dataGraph.getNodeIdByLabel('b'));
-  console.log(dataGraph.getNodeIdByLabel('a'));
+  // console.log(dataGraph.getNodeIdByLabel('b'));
 
   let svgGroup2 = d3.select("svg g");
   // Create the renderer
   const renderer = new dagreD3.render();
 
-  let renderGraph = newGraph();
+  let renderGraph = convertDataGraphToDagre(dataGraph);
 
   // Set up an SVG group so that we can translate the final graph.
   let svgCanvas;
@@ -331,11 +351,13 @@ const App = () => {
   https://stackoverflow.com/questions/36695438/detect-click-outside-div-using-javascript
   window.addEventListener('click', genericClickListener);
 
-  // Render the graph into an svg
+  // Render the dataGraph into an svg
   createEffect(() => {
     let _ = numEdits();
     console.log('reduce');
-    renderGraph = performTransitiveReduction(renderGraph);
+    // dataGraph = performTransitiveReduction(dataGraph);
+    console.log('convert');
+    renderGraph = convertDataGraphToDagre(dataGraph);
     console.log('render');
     renderer(d3.select(svgGroup), renderGraph);
 
@@ -363,7 +385,7 @@ const App = () => {
       //   title: newTitle(),
       //   done: false,
       // });
-      addNode(renderGraph, newTitle());
+      dataGraph.addNode(newTitle());
       setTitle("");
       setNumEdits(numEdits() + 1);
     });
