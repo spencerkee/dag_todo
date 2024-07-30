@@ -68,4 +68,46 @@ export default class DataGraph {
             this.edges.set(edgeKey, {});
         }
     }
+
+    removeEdge(source, target) {
+        if (!this.graph.has(source)) {
+            throw new Error(`Removing edge between source=${source} and target=${target}, but source=${source} does not exist`);
+        }
+        if (!this.graph.has(target)) {
+            throw new Error(`Removing edge between source=${source} and target=${target}, but target=${target} does not exist`);
+        }
+        if (!this.graph.get(source).has(target)) {
+            throw new Error(`Removing edge between source=${source} and target=${target}, but edge does not exist`);
+        }
+        this.graph.get(source).delete(target);
+        this.edges.delete(`${source},${target}`);
+    }
+
+    dfs(startId) {
+        const stack = [startId];
+        const visited = new Set();
+        const result = [];
+
+        while (stack.length) {
+            const vertex = stack.pop();
+
+            if (!visited.has(vertex)) {
+                visited.add(vertex);
+                result.push(vertex);
+
+                for (const child of this.graph.get(vertex)) {
+                    stack.push(child);
+                }
+            }
+        }
+
+        return result;
+    }
+
+    getDescendents(nodeId) {
+        let descendants = this.dfs(nodeId);
+        // Remove self
+        descendants = descendants.slice(1);
+        return descendants;
+    }
 }

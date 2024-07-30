@@ -168,53 +168,23 @@ function countIncomingEdgesForNodes(graph) {
   return nodeIncomingEdges;
 }
 
-function performTransitiveReduction(graph) {
-  // Topologically sort the graph
-  // const sortedVertices = topologicalSort(graph);
-
-  // Initialize the transitive reduction graph
-  const transitiveReduction = newGraph();
-
-  // Iterate over the sorted vertices in reverse order
-  for (const vertex of graph.nodes()) {
-    // Add the vertex to its own transitive closure (ignore this)
-    addNode(transitiveReduction, vertex);
-  }
-
-  let descendants = new Map();
-  let checkCount = countIncomingEdgesForNodes(graph);
-
-  // Go over all nodes in the graph
-  for (const u of graph.nodes()) {
-    // Find neighbouring nodes of u
-    const finalChildren = new Set(graph.successors(u));
-
-    // Go over all neighbouring nodes (retrieve it once more since we'll modify uNeighbours)
-    for (const v of graph.successors(u)) {
-      if (finalChildren.has(v)) {
-        if (!descendants.has(v)) {
-          // Find descendants of v with depth-first search
-          const walkedEdges = new Set(getDescendents(graph, v));
-          descendants.set(v, walkedEdges);
-        }
-        // Delete all descendants of v from uNeighbours
-        for (const d of descendants.get(v) || []) {
-          finalChildren.delete(d);
+function performTransitiveReduction(dataGraph) {
+  /*
+  For each node x in the graph, start DFS from child of x (called y).
+  For each descendent of y (called z) remove the edge x,z
+  */
+  for (const [parent, children] of dataGraph.graph) {
+    for (const child of children) {
+      for (const descendent of dataGraph.getDescendents(child)) {
+        if (dataGraph.edges.has(`${parent},${descendent}`)) {
+          console.log(`Removing edge from ${parent} to ${descendent}`);
+          dataGraph.removeEdge(parent, descendent);
         }
       }
-
-      checkCount.set(v, checkCount[v] - 1);
-      if (checkCount.get(v) === 0) {
-        descendants.delete(v);
-      }
-    }
-    // Add edges to our transitive reduction again
-    for (const v of finalChildren) {
-      transitiveReduction.setEdge(u, v);
     }
   }
-
-  return transitiveReduction;
+  // TODO possibly bad to mutate an object and return it
+  return dataGraph;
 }
 
 function convertDataGraphToDagre(dataGraph) {
@@ -325,7 +295,7 @@ const App = () => {
     arrowheadStyle: "fill: #f66"
   });
   dataGraph.addEdge(bId, cId, {
-    label: "A to C",
+    label: "B to C",
     labelStyle: "font-style: italic; text-decoration: underline;"
   });
   dataGraph.addEdge(aId, cId, {
@@ -355,7 +325,7 @@ const App = () => {
   createEffect(() => {
     let _ = numEdits();
     console.log('reduce');
-    // dataGraph = performTransitiveReduction(dataGraph);
+    dataGraph = performTransitiveReduction(dataGraph);
     console.log('convert');
     renderGraph = convertDataGraphToDagre(dataGraph);
     console.log('render');
