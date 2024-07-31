@@ -19,7 +19,6 @@ function createLocalStore(name, init) {
 }
 
 function createLocalMutable(name, init) {
-  debugger;
   const localState = localStorage.getItem(name);
   const [appState, setAppState] = createMutable(
     localState ? JSON.parse(localState) : init
@@ -241,32 +240,32 @@ function genericClickListener(e) {
   }
 }
 
-function processNodeClick(nodeName) {
+function processNodeClick(nodeId) {
   // First click with no source node set.
   if (sourceNode() === undefined) {
-    setSourceNode(nodeName);
+    setSourceNode(nodeId);
     // updateList(); // This is done in the next step.
     return;
   }
 
   // Clear on self click
-  if (sourceNode() === nodeName) {
+  if (sourceNode() === nodeId) {
     setSourceNode(undefined);
     return;
   }
 
   // Add edge
-  console.log(`Adding edge from '${sourceNode()}' to '${nodeName}'`);
-  renderGraph.setEdge(sourceNode(), nodeName);
+  console.log(`Adding edge from '${sourceNode()}' to '${nodeId}'`);
+  dataGraph.setEdge(sourceNode(), nodeId);
   // Don't do the below in case you want to set multiple children
   // setSourceNode(undefined);
 
   setNumEdits(numEdits() + 1);
 }
 
-function nodeClickListener(nodeLabelOrIdOrNotSure) {
-  console.log('node clicked', nodeLabelOrIdOrNotSure);
-  processNodeClick(nodeLabelOrIdOrNotSure, sourceNode, setSourceNode, numEdits, setNumEdits);
+function nodeClickListener(nodeId) {
+  console.log('node clicked', nodeId);
+  processNodeClick(nodeId, sourceNode, setSourceNode, numEdits, setNumEdits);
 }
 
 /* End of non-graph functions */
@@ -280,25 +279,25 @@ function nodeClickListener(nodeLabelOrIdOrNotSure) {
 
 // Global signals. TODO should probably use context in the future.
 const [newTitle, setTitle] = createSignal("");
-const [sourceNode, setSourceNode] = createSignal("asdf");
+const [sourceNode, setSourceNode] = createSignal(undefined);
 const [numEdits, setNumEdits] = createSignal(0);
+let dataGraph = new DataGraph();
 
 const App = () => {
   console.log('App');
 
-  let dataGraph = new DataGraph();
   let aId = dataGraph.addNode("a");
   let bId = dataGraph.addNode("b");
   let cId = dataGraph.addNode("c");
-  dataGraph.addEdge(aId, bId, {
+  dataGraph.setEdge(aId, bId, {
     style: "stroke: #f66; stroke-width: 3px; stroke-dasharray: 5, 5;",
     arrowheadStyle: "fill: #f66"
   });
-  dataGraph.addEdge(bId, cId, {
+  dataGraph.setEdge(bId, cId, {
     label: "B to C",
     labelStyle: "font-style: italic; text-decoration: underline;"
   });
-  dataGraph.addEdge(aId, cId, {
+  dataGraph.setEdge(aId, cId, {
     label: "line interpolation different",
     curve: d3.curveBasis
   });
@@ -325,6 +324,7 @@ const App = () => {
   createEffect(() => {
     let _ = numEdits();
     console.log('reduce');
+    // Race condition with source node.
     dataGraph = performTransitiveReduction(dataGraph);
     console.log('convert');
     renderGraph = convertDataGraphToDagre(dataGraph);
@@ -363,7 +363,6 @@ const App = () => {
 
   onMount(() => {
     console.log('mount');
-    setupGraph(renderGraph);
     setNumEdits(numEdits() + 1);
   });
 
@@ -384,7 +383,8 @@ const App = () => {
       <svg id="svg-canvas" ref={svgCanvas}>
         <g id="svg-g" ref={svgGroup}></g>
       </svg>
-      <div>Source Node: {sourceNode()}</div>
+      {/* TODO I think there's some other way of doing this */}
+      <div>Source Node: {sourceNode() === undefined ? "" : dataGraph.nodes.get(sourceNode()).label}</div>
       {/*<form onSubmit={addTodo}>
         <input
           placeholder="enter todo and click +"

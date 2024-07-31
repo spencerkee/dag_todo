@@ -50,7 +50,7 @@ export default class DataGraph {
         throw new Error(`Node with label=${label} not found`);
     }
 
-    addEdge(source, target, attrDict) {
+    setEdge(source, target, attrDict) {
         if (!this.graph.has(source)) {
             throw new Error(`Adding edge between source=${source} and target=${target}, but source=${source} does not exist`);
         }
