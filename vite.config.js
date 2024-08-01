@@ -3,7 +3,7 @@ import solidPlugin from 'vite-plugin-solid';
 // import devtools from 'solid-devtools/vite';
 
 export default defineConfig({
-  base: '/',
+  base: '/dag_todo/',
   plugins: [
     /* 
     Uncomment the following line to enable solid-devtools.
