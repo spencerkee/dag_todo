@@ -368,11 +368,6 @@ const App = () => {
   const addTodo = (e) => {
     e.preventDefault();
     batch(() => {
-
-      // setTodos(todos.length, {
-      //   title: newTitle(),
-      //   done: false,
-      // });
       dataGraph.addNode(newTitle());
       setTitle("");
     });
@@ -401,16 +396,6 @@ const App = () => {
       </svg>
       {/* TODO I think there's some other way of doing this */}
       <div>Source Node: {sourceNode() === undefined ? "" : dataGraph.nodes.get(sourceNode()).label}</div>
-      {/*<form onSubmit={addTodo}>
-        <input
-          placeholder="enter todo and click +"
-          required
-          value={newTitle()}
-          onInput={(e) => setTitle(e.currentTarget.value)}
-        />
-        <button>+</button>
-      </form>*/}
-
       <For each={todos()}>
         {(todo, i) => (
           <div>
@@ -430,26 +415,6 @@ const App = () => {
           </div>
         )}
       </For>
-
-      {/*<For each={todos}>
-        {(todo, i) => (
-          <div>
-            <input
-              type="checkbox"
-              checked={todo.done}
-              onChange={(e) => setTodos(i(), "done", e.currentTarget.checked)}
-            />
-            <input
-              type="text"
-              value={todo.title}
-              onChange={(e) => setTodos(i(), "title", e.currentTarget.value)}
-            />
-            <button onClick={() => setTodos((t) => removeIndex(t, i()))}>
-              x
-            </button>
-          </div>
-        )}
-      </For>*/}
     </>
   );
 };

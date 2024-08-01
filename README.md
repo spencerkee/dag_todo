@@ -35,6 +35,39 @@ You can deploy the `dist` folder to any static host provider (netlify, surge, no
 
 # TODO
 
+### 2024-07-31
+I want to have a signal that's tied with my object. I want to put it on the object itself, but then if I destroy and recreate it I run into issues.
+Can I just not do that? Let me try.
+
+### 2024-07-29
+Instead of hashing nodes I can use a UUID and have a comma delimiter or something.
+
+### 2024-07-24
+If I wanted to have a reactive graph, how would I construct it?
+
+Option 1:
+- Create a reactive graph class, with my own methods for checking if a path exists between two nodes, and my own store of edge attributes etc.
+- Every time it updates, increment the numEdits signal.
+- When numEdits updates, recreate the renderGraph and render it.
+
+Option 2:
+- Use some off the shelf networkx-esq library.
+- Whenever I update it, increment the numEdits signal.
+- When numEdits updates, recreate the renderGraph and render it.
+
+Option 3:
+- Create a non-reactive graph class with my own methods.
+- Every time it updates, increment the numEdits signal.
+- When numEdits updates, recreate the renderGraph and render it.
+
+In option 1 I should probably batch changes like transitive reductions etc. That's a lot of reactivity I'm tracking without any gain.
+Option 3 vs 2. Easier to write "path exists" etc. Vis, sigma, ngraph. Higher install weight. Learning curve. 
+
+Why do I want to do this stuff again? Oh because I want to switch off of this layout algorithm and not worry about adding weird attributes.
+I'll just pick rolling my own.
+
+### Older
+
 How should I construct this? I guess the local store state can include the "data graph".
 Then the list will be a function of the datagraph and the selected source node.
 Should the source node be a part of the localstore? I think not.
