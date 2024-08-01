@@ -130,41 +130,13 @@ function dfs(graph, start, neighborFunc) {
 }
 
 function getUnconnectedNodes(graph, node) {
-  let allNodes = new Set(graph.nodes());
+  let allNodes = new Set(graph.nodes);
   let connectedNodes = new Set([node]);
   getDescendents(graph, node).forEach(connectedNodes.add, connectedNodes);
   getAncestors(graph, node).forEach(connectedNodes.add, connectedNodes);
   let unconnectedNodes = allNodes.difference(connectedNodes);
   let orderedUnconnectedNodes = topologicalSort(g).filter(n => unconnectedNodes.has(n));
   return orderedUnconnectedNodes;
-}
-
-function getDescendents(graph, node) {
-  let descendants = dfs(graph, node, 'successors');
-  // Remove self
-  descendants = descendants.slice(1);
-  return descendants;
-}
-
-function getAncestors(graph, node) {
-  let ancestors = dfs(graph, node, 'predecessors');
-  // Remove self
-  ancestors = ancestors.slice(1);
-  return ancestors;
-}
-
-function countIncomingEdges(graph, node) {
-  return graph.edges().filter(edge => edge.w === node).length;
-}
-
-function countIncomingEdgesForNodes(graph) {
-  const nodeIncomingEdges = new Map();
-
-  for (const n of graph.nodes()) {
-    nodeIncomingEdges.set(n, countIncomingEdges(graph, n));
-  }
-
-  return nodeIncomingEdges;
 }
 
 function performTransitiveReduction(dataGraph) {
@@ -203,6 +175,32 @@ function convertDataGraphToDagre(dataGraph) {
 
   return g;
 }
+
+function topologicalSort(graph) {
+  const visited = new Set();
+  const stack = [];
+
+  for (const node of graph.nodes.keys()) {
+    if (!visited.has(node)) {
+      topologicalSortHelper(graph, node, visited, stack);
+    }
+  }
+
+  return stack.reverse();
+}
+
+function topologicalSortHelper(graph, node, visited, stack) {
+  visited.add(node);
+
+  for (const neighbor of graph.getChildren(node)) {
+    if (!visited.has(neighbor)) {
+      topologicalSortHelper(graph, neighbor, visited, stack);
+    }
+  }
+
+  stack.push(node);
+}
+
 /* End graph functions */
 
 /* Start of non-graph functions */
@@ -226,7 +224,7 @@ function genericClickListener(e) {
   // TODO Could do this more efficiently by doing this in the above step.
   let svg_or_null = elementOrParentMatchesSelector(e.target, '#svg-canvas');
 
-  if (node_or_null === null && svg_or_null !== null) {
+  if (node_or_null === null && svg_or_null !== null && sourceNode() !== undefined) {
     // Clicked inside box, but not on a node so clear source node.
     // clearSourceNode();
     console.log('window clearing source node');
@@ -264,10 +262,17 @@ function nodeClickListener(nodeId) {
   processNodeClick(nodeId, sourceNode, setSourceNode);
 }
 
-
 function reflectList() {
-  if (sourceNode() === undefined) return dataGraph.sources();
-  return dataGraph.getUnconnectedNodes(sourceNode());
+  if (sourceNode() === undefined) {
+    console.log('reflectList sourceNode is undefined');
+    console.log(`reflectList sources: ${dataGraph.sources()}`);
+    return dataGraph.sources();
+  }
+  console.log(`reflectList sourceNode is ${sourceNode()}`);
+  let unconnectedNodes = dataGraph.getUnconnectedNodes(sourceNode());
+  let orderedUnconnectedNodes = topologicalSort(dataGraph).filter(n => unconnectedNodes.has(n));
+  console.log(`reflectList orderedUnconnectedNodes: ${orderedUnconnectedNodes}`);
+  return orderedUnconnectedNodes;
 }
 
 /* End of non-graph functions */
@@ -405,6 +410,26 @@ const App = () => {
         />
         <button>+</button>
       </form>*/}
+
+      <For each={todos()}>
+        {(todo, i) => (
+          <div>
+            <input
+              type="checkbox"
+            // checked={todo.done}
+            // onChange={(e) => setTodos(i(), "done", e.currentTarget.checked)}
+            />
+            <input
+              type="text"
+              value={dataGraph.nodes.get(todo).label}
+            // onChange={(e) => setTodos(i(), "title", e.currentTarget.value)}
+            />
+            <button onClick={() => setTodos((t) => removeIndex(t, i()))}>
+              x
+            </button>
+          </div>
+        )}
+      </For>
 
       {/*<For each={todos}>
         {(todo, i) => (
