@@ -182,8 +182,6 @@ function performTransitiveReduction(dataGraph) {
       }
     }
   }
-  // TODO possibly bad to mutate an object and return it
-  return dataGraph;
 }
 
 function convertDataGraphToDagre(dataGraph) {
@@ -259,13 +257,17 @@ function processNodeClick(nodeId) {
   dataGraph.setEdge(sourceNode(), nodeId);
   // Don't do the below in case you want to set multiple children
   // setSourceNode(undefined);
-
-  setNumEdits(numEdits() + 1);
 }
 
 function nodeClickListener(nodeId) {
   console.log('node clicked', nodeId);
-  processNodeClick(nodeId, sourceNode, setSourceNode, numEdits, setNumEdits);
+  processNodeClick(nodeId, sourceNode, setSourceNode);
+}
+
+
+function reflectList() {
+  if (sourceNode() === undefined) return dataGraph.sources();
+  return dataGraph.getUnconnectedNodes(sourceNode());
 }
 
 /* End of non-graph functions */
@@ -280,8 +282,10 @@ function nodeClickListener(nodeId) {
 // Global signals. TODO should probably use context in the future.
 const [newTitle, setTitle] = createSignal("");
 const [sourceNode, setSourceNode] = createSignal(undefined);
-const [numEdits, setNumEdits] = createSignal(0);
+const [todos, setTodos] = createSignal([]);
 let dataGraph = new DataGraph();
+const numEdits = dataGraph.numEdits;
+const setNumEdits = dataGraph.setNumEdits;
 
 const App = () => {
   console.log('App');
@@ -324,8 +328,10 @@ const App = () => {
   createEffect(() => {
     let _ = numEdits();
     console.log('reduce');
-    // Race condition with source node.
-    dataGraph = performTransitiveReduction(dataGraph);
+    // TODO Race condition with source node? Or removed now that I have the graph produce the signal?
+    batch(() => {
+      performTransitiveReduction(dataGraph);
+    })
     console.log('convert');
     renderGraph = convertDataGraphToDagre(dataGraph);
     console.log('render');
@@ -347,6 +353,13 @@ const App = () => {
       .on('click', nodeClickListener);
   })
 
+  createEffect(() => {
+    let _ = sourceNode();
+    // TODO also need dependency on the graph.
+    console.log('update node list');
+    setTodos(reflectList());
+  });
+
   const addTodo = (e) => {
     e.preventDefault();
     batch(() => {
@@ -357,13 +370,11 @@ const App = () => {
       // });
       dataGraph.addNode(newTitle());
       setTitle("");
-      setNumEdits(numEdits() + 1);
     });
   };
 
   onMount(() => {
     console.log('mount');
-    setNumEdits(numEdits() + 1);
   });
 
   return (

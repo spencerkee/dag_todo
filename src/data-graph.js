@@ -1,9 +1,12 @@
+import { createSignal } from "solid-js";
+
 export default class DataGraph {
     constructor() {
         // TODO Should I use objects instead of maps?
         this.nodes = new Map(); // String to object
         this.edges = new Map(); // Array to object
         this.graph = new Map(); // String to Set
+        [this.numEdits, this.setNumEdits] = createSignal(0);
     }
 
     createNodeId() {
@@ -19,6 +22,7 @@ export default class DataGraph {
             this.nodes.set(id, { label: label });
         }
         this.graph.set(id, new Set());
+        this.setNumEdits(this.numEdits() + 1);
         return id;
     }
 
@@ -39,6 +43,7 @@ export default class DataGraph {
         for (let [_, children] of this.graph.entries()) {
             children.delete(id);
         }
+        this.setNumEdits(this.numEdits() + 1);
     }
 
     // TODO Inefficient.
@@ -67,6 +72,7 @@ export default class DataGraph {
         } else {
             this.edges.set(edgeKey, {});
         }
+        this.setNumEdits(this.numEdits() + 1);
     }
 
     removeEdge(source, target) {
@@ -81,9 +87,13 @@ export default class DataGraph {
         }
         this.graph.get(source).delete(target);
         this.edges.delete(`${source},${target}`);
+        this.setNumEdits(this.numEdits() + 1);
     }
 
-    dfs(startId) {
+    dfs(startId, neighborFunc) {
+        if (neighborFunc === undefined) {
+            neighborFunc = this.children;
+        }
         const stack = [startId];
         const visited = new Set();
         const result = [];
@@ -95,7 +105,7 @@ export default class DataGraph {
                 visited.add(vertex);
                 result.push(vertex);
 
-                for (const child of this.graph.get(vertex)) {
+                for (const child of neighborFunc(vertex)) {
                     stack.push(child);
                 }
             }
@@ -104,10 +114,58 @@ export default class DataGraph {
         return result;
     }
 
+    getChildren(nodeId) {
+        return this.graph.get(nodeId) ?? new Set();
+    }
+
+    getParents(nodeId) {
+        let parents = new Set();
+        for (let [parent, children] of this.graph.entries()) {
+            if (children.has(nodeId)) {
+                parents.add(parent);
+            }
+        }
+        return parents;
+    }
+
     getDescendents(nodeId) {
-        let descendants = this.dfs(nodeId);
+        let childrenFn = this.getChildren.bind(this);
+        let descendants = this.dfs(nodeId, childrenFn);
         // Remove self
         descendants = descendants.slice(1);
         return descendants;
+    }
+
+    getAncestors(nodeId) {
+        let parentFn = this.getParents.bind(this);
+        let ancestors = this.dfs(nodeId, parentFn);
+        // Remove self
+        ancestors = ancestors.slice(1);
+        return ancestors;
+    }
+
+    getUnconnectedNodes(nodeId) {
+        // let allNodes = new Set(graph.nodes());
+        // let connectedNodes = new Set([node]);
+        // getDescendents(graph, node).forEach(connectedNodes.add, connectedNodes);
+        // getAncestors(graph, node).forEach(connectedNodes.add, connectedNodes);
+        // let unconnectedNodes = allNodes.difference(connectedNodes);
+        // let orderedUnconnectedNodes = topologicalSort(g).filter(n => unconnectedNodes.has(n));
+        // return orderedUnconnectedNodes;
+        let allNodes = new Set(this.nodes.keys());
+        let connectedNodes = new Set([nodeId]);
+        this.getDescendents(nodeId).forEach(connectedNodes.add, connectedNodes);
+        this.getAncestors(nodeId).forEach(connectedNodes.add, connectedNodes);
+        return allNodes.difference(connectedNodes);
+    }
+
+    sources() {
+        let sources = new Set(this.nodes.keys());
+        for (let [_, children] of this.graph.entries()) {
+            for (let child of children) {
+                sources.delete(child);
+            }
+        }
+        return Array.from(sources);
     }
 }
