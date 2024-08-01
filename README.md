@@ -39,6 +39,8 @@ You can deploy the `dist` folder to any static host provider (netlify, surge, no
 I want to have a signal that's tied with my object. I want to put it on the object itself, but then if I destroy and recreate it I run into issues.
 Can I just not do that? Let me try.
 
+Also should maybe split changes into ones that require a transitive reduction and those that don't. E.g. changing the label shouldn't require it.
+
 ### 2024-07-29
 Instead of hashing nodes I can use a UUID and have a comma delimiter or something.
 

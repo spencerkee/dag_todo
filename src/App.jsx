@@ -298,6 +298,7 @@ const App = () => {
   let aId = dataGraph.addNode("a");
   let bId = dataGraph.addNode("b");
   let cId = dataGraph.addNode("c");
+  let dId = dataGraph.addNode("d");
   dataGraph.setEdge(aId, bId, {
     style: "stroke: #f66; stroke-width: 3px; stroke-dasharray: 5, 5;",
     arrowheadStyle: "fill: #f66"
@@ -407,7 +408,7 @@ const App = () => {
             <input
               type="text"
               value={dataGraph.nodes.get(todo).label}
-            // onChange={(e) => setTodos(i(), "title", e.currentTarget.value)}
+              onChange={(e) => dataGraph.setNodeLabel(todo, e.currentTarget.value)}
             />
             <button onClick={() => { dataGraph.removeNode(todo) }}>
               x

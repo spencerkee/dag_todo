@@ -26,6 +26,14 @@ export default class DataGraph {
         return id;
     }
 
+    setNodeLabel(nodeId, newNodeLabel) {
+        if (!this.nodes.has(nodeId)) {
+            throw new Error(`Setting node label for id=${nodeId}, but node does not exist`);
+        }
+        this.nodes.get(nodeId).label = newNodeLabel;
+        this.setNumEdits(this.numEdits() + 1);
+    }
+
     removeNode(id) {
         if (!this.graph.has(id)) {
             throw new Error(`Removing node with id=${id}, but node does not exist`);
