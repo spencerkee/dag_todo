@@ -360,8 +360,8 @@ const App = () => {
   })
 
   createEffect(() => {
-    let _ = sourceNode();
-    // TODO also need dependency on the graph.
+    let _unusedSource = sourceNode();
+    let _unusedEdits = numEdits();
     console.log('update node list');
     setTodos(reflectList());
   });
@@ -413,6 +413,21 @@ const App = () => {
             <button onClick={() => { dataGraph.removeNode(todo) }}>
               x
             </button>
+            <Show
+              when={sourceNode() !== undefined}
+              fallback={
+                <button onClick={() => { setSourceNode(todo) }}>
+                  o
+                </button>
+              }
+            >
+              <button onClick={() => { dataGraph.setEdge(sourceNode(), todo) }}>
+                {">"}
+              </button>
+              <button onClick={() => { dataGraph.setEdge(todo, sourceNode()) }}>
+                {"<"}
+              </button>
+            </Show>
           </div>
         )}
       </For>
