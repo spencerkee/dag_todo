@@ -28,14 +28,65 @@ function createLocalMutable(name, init) {
 }
 
 function saveFile(state) {
-  let json = JSON.stringify(state)
+  // Needed to stringify maps. Source: https://stackoverflow.com/questions/29085197/how-do-you-json-stringify-an-es6-map
+  function replacer(key, value) {
+    if (value instanceof Map) {
+      return {
+        dataType: 'Map',
+        value: Array.from(value.entries()), // or with spread: value: [...value]
+      };
+    } else if (value instanceof Set) {
+      return {
+        dataType: 'Set',
+        value: Array.from(value),
+      };
+    }
+    return value;
+  }
+  let json = JSON.stringify(state, replacer)
   let a = document.createElement("a")
   a.href = URL.createObjectURL(
     new Blob([json], { type: "application/json" })
   )
   let now = new Date();
-  a.download = `test-${now.toISOString()}.json`
+  a.download = `todoGraph-${now.toISOString().split('.')[0]}.json`
   a.click()
+}
+
+function openFile() {
+  document.getElementById('inputFile').click();
+}
+
+function loadFile(fileBlob) {
+  function reviver(key, value) {
+    if (typeof value === 'object' && value !== null) {
+      if (value.dataType === 'Map') {
+        return new Map(value.value);
+      } else if (value.dataType === 'Set') {
+        return new Set(value.value);
+      }
+    }
+    return value;
+  }
+  if (fileBlob === undefined) return;
+  let reader = new FileReader();
+
+  reader.readAsText(fileBlob);
+
+  reader.onload = function () {
+    const jsonGraph = JSON.parse(reader.result, reviver);
+    dataGraph.nodes = jsonGraph.nodes;
+    dataGraph.edges = jsonGraph.edges;
+    dataGraph.graph = jsonGraph.graph;
+    batch(() => {
+      setSourceNode(undefined);
+      setNumEdits(numEdits() + 1);
+    });
+  }
+
+  reader.onerror = function () {
+    console.log(reader.error);
+  };
 }
 
 function newGraph() {
@@ -43,69 +94,6 @@ function newGraph() {
     .setGraph({ rankdir: "LR" })
     .setDefaultEdgeLabel(function () { return {}; });
 }
-
-function setupGraph(g) {
-  // Here we're setting nodeclass, which is used by our custom drawNodes function
-  // below.
-  g.setNode(0, { label: "TOP", class: "type-TOP" });
-  g.setNode(1, { label: "S", class: "type-S" });
-  g.setNode(2, { label: "NP", class: "type-NP" });
-  g.setNode(3, { label: "DT", class: "type-DT" });
-  g.setNode(4, { label: "This", class: "type-TK" });
-  g.setNode(5, { label: "VP", class: "type-VP" });
-  g.setNode(6, { label: "VBZ", class: "type-VBZ" });
-  g.setNode(7, { label: "is", class: "type-TK" });
-  g.setNode(8, { label: "NP", class: "type-NP" });
-  g.setNode(9, { label: "DT", class: "type-DT" });
-  g.setNode(10, { label: "an", class: "type-TK" });
-  g.setNode(11, { label: "NN", class: "type-NN" });
-  g.setNode(12, { label: "example", class: "type-TK" });
-  g.setNode(13, { label: ".", class: "type-." });
-  g.setNode(14, { label: "sentence", class: "type-TK" });
-
-  // Set up edges, no special attributes.
-  g.setEdge(3, 4);
-  g.setEdge(2, 3);
-  g.setEdge(1, 2);
-  g.setEdge(6, 7);
-  g.setEdge(5, 6);
-  g.setEdge(9, 10);
-  g.setEdge(8, 9);
-  g.setEdge(11, 12);
-  g.setEdge(8, 11);
-  g.setEdge(5, 8);
-  g.setEdge(1, 5);
-  g.setEdge(13, 14);
-  g.setEdge(1, 13);
-  g.setEdge(0, 1);
-}
-
-function GraphSvg(graph) {
-  let g = newGraph();
-  setupGraph(g);
-  return g;
-}
-
-// function DataGraphProvider(props) {
-//   const [count, setCount] = createSignal(props.count || 0),
-//     counter = [
-//       count,
-//       {
-//         increment() {
-//           setCount(c => c + 1);
-//         },
-//         decrement() {
-//           setCount(c => c - 1);
-//         }
-//       }
-//     ];
-
-//   return (
-//     <CounterContext.Provider value={counter}>
-//       {props.children}
-//     </CounterContext.Provider>
-//   );
-// }
 
 /* Start graph functions */
 function dfs(graph, start, neighborFunc) {
@@ -295,25 +283,25 @@ const setNumEdits = dataGraph.setNumEdits;
 const App = () => {
   console.log('App');
 
-  let aId = dataGraph.addNode("a");
-  let bId = dataGraph.addNode("b");
-  let cId = dataGraph.addNode("c");
-  let dId = dataGraph.addNode("d");
-  dataGraph.setEdge(aId, bId, {
-    style: "stroke: #f66; stroke-width: 3px; stroke-dasharray: 5, 5;",
-    arrowheadStyle: "fill: #f66"
-  });
-  dataGraph.setEdge(bId, cId, {
-    label: "B to C",
-    labelStyle: "font-style: italic; text-decoration: underline;"
-  });
-  dataGraph.setEdge(aId, cId, {
-    label: "line interpolation different",
-    curve: d3.curveBasis
-  });
-  // dataGraph.removeNode(id1);
-  console.log(dataGraph);
-  // console.log(dataGraph.getNodeIdByLabel('b'));
+  // let aId = dataGraph.addNode("a");
+  // let bId = dataGraph.addNode("b");
+  // let cId = dataGraph.addNode("c");
+  // let dId = dataGraph.addNode("d");
+  // dataGraph.setEdge(aId, bId, {
+  //   style: "stroke: #f66; stroke-width: 3px; stroke-dasharray: 5, 5;",
+  //   arrowheadStyle: "fill: #f66"
+  // });
+  // dataGraph.setEdge(bId, cId, {
+  //   label: "B to C",
+  //   labelStyle: "font-style: italic; text-decoration: underline;"
+  // });
+  // dataGraph.setEdge(aId, cId, {
+  //   label: "line interpolation different",
+  //   curve: d3.curveBasis
+  // });
+  // // dataGraph.removeNode(id1);
+  // console.log(dataGraph);
+  // // console.log(dataGraph.getNodeIdByLabel('b'));
 
   let svgGroup2 = d3.select("svg g");
   // Create the renderer
@@ -381,8 +369,13 @@ const App = () => {
   return (
     <>
       <h3>TODO Dag</h3>
-      <button onClick={() => saveFile(appState)}>Save File</button>
-      <button>Load File</button>
+      <button onClick={() => saveFile(dataGraph)}>Save File</button>
+      <input type="file" name="" id='inputFile' onChange={(e) => {
+        // TODO Not sure about this option chaining.
+        let fileBlob = e?.target?.files[0];
+        loadFile(fileBlob);
+      }} hidden></input >
+      <button onClick={() => openFile()}>Load File</button>
       <form onSubmit={addTodo}>
         <input
           placeholder="enter todo and click +"
