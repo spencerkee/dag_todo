@@ -424,7 +424,7 @@ const App = () => {
               value={dataGraph.nodes.get(todo).label}
             // onChange={(e) => setTodos(i(), "title", e.currentTarget.value)}
             />
-            <button onClick={() => setTodos((t) => removeIndex(t, i()))}>
+            <button onClick={() => { dataGraph.removeNode(todo) }}>
               x
             </button>
           </div>
