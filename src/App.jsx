@@ -403,6 +403,18 @@ const App = () => {
 
   onMount(() => {
     console.log('mount');
+    /* Event Listeners */
+    window.addEventListener('keyup', function (e) {
+      const key = e.key;
+      if (key === "Delete") {
+        if (sourceNode() !== undefined) {
+          batch(() => {
+            dataGraph.removeNode(sourceNode());
+            setSourceNode(undefined);
+          });
+        }
+      }
+    });
   });
 
   return (
