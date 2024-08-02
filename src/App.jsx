@@ -277,14 +277,14 @@ function reflectList() {
 
 
 function fetchGraphFromLocalStorage() {
-  debugger;
   let json = localStorage.getItem('dataGraph');
   let jsonGraph = jsonToGraph(json);
   // TODO Is it even necessary to serialize it to json?
   if (jsonGraph !== null) {
+    console.log('Loading jsonGraph from localStorage');
     updateDataGraphFromJsonGraph(dataGraph, jsonGraph);
   } else {
-    console.log('jsonGraph is null');
+    console.log('jsonGraph in localStorage is null');
   }
 }
 /* End of non-graph functions */
@@ -301,6 +301,7 @@ const [newTitle, setTitle] = createSignal("");
 const [sourceNode, setSourceNode] = createSignal(undefined);
 const [todos, setTodos] = createSignal([]);
 let dataGraph = new DataGraph()
+// TODO Interesting that it's not necessary to set numEdits here.
 fetchGraphFromLocalStorage();
 const numEdits = dataGraph.numEdits;
 const setNumEdits = dataGraph.setNumEdits;
