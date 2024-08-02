@@ -302,7 +302,8 @@ function fetchGraphFromLocalStorage() {
 
 // Global signals. TODO should probably use context in the future.
 const [newTitle, setTitle] = createSignal("");
-const [graphName, setGraphName] = createSignal("myGraph");
+// TODO This probably doesn't need to be a signal.
+const [graphName, setGraphName] = createSignal("myGraph.json");
 const [sourceNode, setSourceNode] = createSignal(undefined);
 const [todos, setTodos] = createSignal([]);
 let dataGraph = new DataGraph()
