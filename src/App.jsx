@@ -149,9 +149,11 @@ function performTransitiveReduction(dataGraph) {
 function convertDataGraphToDagre(dataGraph) {
   let g = newGraph();
 
+  // Clone attrs here becaues otherwise when we render the renderGraph it will add attributes to the dataGraph.
   for (const [id, nodeAttrs] of dataGraph.nodes.entries()) {
+    const nodeAttrsClone = structuredClone(nodeAttrs);
     g.setNode(id, {
-      ...nodeAttrs,
+      ...nodeAttrsClone,
       // Round the corners of the nodes
       rx: 5,
       ry: 5,
@@ -160,7 +162,8 @@ function convertDataGraphToDagre(dataGraph) {
 
   for (const [edge, edgeAttrs] of dataGraph.edges.entries()) {
     let [source, target] = edge.split(',');
-    g.setEdge(source, target, edgeAttrs);
+    const edgeAttrsClone = structuredClone(edgeAttrs);
+    g.setEdge(source, target, edgeAttrsClone);
   }
 
   return g;
@@ -280,10 +283,6 @@ function fetchGraphFromLocalStorage() {
 /* End of non-graph functions */
 
 /* Start of components */
-// function SourceNode(sourceNode) {
-//   return <div>Source Node: {sourceNode()}</div>;
-// }
-
 /* End of components */
 
 // Global signals. TODO should probably use context in the future.
