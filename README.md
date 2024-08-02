@@ -35,6 +35,21 @@ You can deploy the `dist` folder to any static host provider (netlify, surge, no
 
 # TODO
 
+### 2024-08-02
+For storing the graph name, there's a few options.
+1) On the graph object itself
+    This is fine now, but do I plan on adding many more attributes? Maybe. But that's not so bad.
+    Is the filename usually a property of the object itself? I guess so, word and text documents usually know.
+    The update patterns of the two things feels weird.
+2) In a separate key in local storage
+    If you refresh I can load this info. If you load a different file, I would need to clear the name but wouldn't know the neew one.
+    No, it should be associated with the object.
+3) On the same key in local storage but in some appState object
+    My gut is telling me to use this.
+
+I guess either way it would be nice if this info was on the file so you could just load a file and have it.
+Ah actually, I can get most of the way there on just reads. Later on chrome can use showSaveFilePicker.
+
 ### 2024-07-31
 I want to have a signal that's tied with my object. I want to put it on the object itself, but then if I destroy and recreate it I run into issues.
 Can I just not do that? Let me try.

@@ -18,7 +18,7 @@ function createLocalStore(name, init) {
   return [appState, setAppState];
 }
 
-function graphToJson(dataGraph) {
+function objectToJson(object) {
   function replacer(key, value) {
     if (value instanceof Map) {
       return {
@@ -33,10 +33,14 @@ function graphToJson(dataGraph) {
     }
     return value;
   }
-  return JSON.stringify(dataGraph, replacer);
+  return JSON.stringify(object, replacer);
 }
 
-function jsonToGraph(json) {
+function graphToJson(dataGraph) {
+  return objectToJson(dataGraph);
+}
+
+function jsonToObject(json) {
   function reviver(key, value) {
     if (typeof value === 'object' && value !== null) {
       if (value.dataType === 'Map') {
@@ -50,6 +54,10 @@ function jsonToGraph(json) {
   return JSON.parse(json, reviver);
 }
 
+function jsonToGraph(json) {
+  return jsonToObject(json);
+}
+
 function saveFile(state) {
   // Needed to stringify maps. Source: https://stackoverflow.com/questions/29085197/how-do-you-json-stringify-an-es6-map
   let json = graphToJson(dataGraph);
@@ -58,7 +66,9 @@ function saveFile(state) {
     new Blob([json], { type: "application/json" })
   )
   let now = new Date();
-  a.download = `todoGraph-${now.toISOString().split('.')[0]}.json`
+  a.download = graphName();
+  // Incorporating the timestamp might still be nice.
+  // a.download = `todoGraph-${now.toISOString().split('.')[0]}.json`
   a.click()
 }
 
@@ -268,6 +278,11 @@ function reflectList() {
   return orderedUnconnectedNodes;
 }
 
+function fetchAppStateFromLocalStorage() {
+  let json = localStorage.getItem('appState');
+  let appState = json !== null ? JSON.parse(json) : {};
+  return appState;
+}
 
 function fetchGraphFromLocalStorage() {
   let json = localStorage.getItem('dataGraph');
@@ -287,11 +302,13 @@ function fetchGraphFromLocalStorage() {
 
 // Global signals. TODO should probably use context in the future.
 const [newTitle, setTitle] = createSignal("");
+const [graphName, setGraphName] = createSignal("myGraph");
 const [sourceNode, setSourceNode] = createSignal(undefined);
 const [todos, setTodos] = createSignal([]);
 let dataGraph = new DataGraph()
 // TODO Interesting that it's not necessary to set numEdits here.
 fetchGraphFromLocalStorage();
+let appState = fetchAppStateFromLocalStorage();
 const numEdits = dataGraph.numEdits;
 const setNumEdits = dataGraph.setNumEdits;
 
@@ -394,10 +411,16 @@ const App = () => {
       <button onClick={() => saveFile(dataGraph)}>Save File</button>
       <input type="file" name="" id='inputFile' onChange={(e) => {
         // TODO Not sure about this option chaining.
-        let fileBlob = e?.target?.files[0];
-        loadFile(fileBlob);
+        let fileObj = e?.target?.files[0];
+        setGraphName(fileObj.name);
+        loadFile(fileObj);
       }} hidden></input >
       <button onClick={() => openFile()}>Load File</button>
+      <input
+        type="text"
+        value={graphName()}
+        onChange={(e) => setGraphName(e.currentTarget.value)}
+      />
       <form onSubmit={addTodo}>
         <input
           placeholder="enter todo and click +"
