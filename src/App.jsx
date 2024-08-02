@@ -409,7 +409,7 @@ const App = () => {
       if (key === "Delete") {
         if (sourceNode() !== undefined) {
           batch(() => {
-            dataGraph.removeNode(sourceNode());
+            dataGraph.removeNodeAndContract(sourceNode());
             setSourceNode(undefined);
           });
         }
@@ -460,7 +460,7 @@ const App = () => {
               value={dataGraph.nodes.get(todo).label}
               onChange={(e) => dataGraph.setNodeLabel(todo, e.currentTarget.value)}
             />
-            <button onClick={() => { dataGraph.removeNode(todo) }}>
+            <button onClick={() => { dataGraph.removeNodeAndContract(todo) }}>
               x
             </button>
             <Show

@@ -54,6 +54,17 @@ export default class DataGraph {
         this.setNumEdits(this.numEdits() + 1);
     }
 
+    removeNodeAndContract(id) {
+        for (const parent of this.getParents(id)) {
+            for (const child of this.getChildren(id)) {
+                // TODO How should I handle edges with attributes? Probably prefer the parent.
+                this.setEdge(parent, child, this.edges.get(`${parent},${id}`));
+            }
+        }
+        // TODO Incrementing the edits is unecessary because removeNode already does it.
+        this.removeNode(id);
+    }
+
     // TODO Inefficient.
     getNodeIdByLabel(label) {
         let nodeEntryOrUndef = this.nodes.entries().find(entry => entry[1].label === label);
