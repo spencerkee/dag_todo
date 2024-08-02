@@ -1,7 +1,7 @@
 import * as d3 from "d3";
 import dagreD3 from "dagre-d3/dist/dagre-d3";
 import { batch, createEffect, createSignal, onMount } from "solid-js";
-import { createMutable, createStore } from "solid-js/store";
+import { createStore } from "solid-js/store";
 import DataGraph from "./data-graph";
 import "./index.css";
 
@@ -12,15 +12,6 @@ function removeIndex(array, index) {
 function createLocalStore(name, init) {
   const localState = localStorage.getItem(name);
   const [appState, setAppState] = createStore(
-    localState ? JSON.parse(localState) : init
-  );
-  createEffect(() => localStorage.setItem(name, JSON.stringify(appState)));
-  return [appState, setAppState];
-}
-
-function createLocalMutable(name, init) {
-  const localState = localStorage.getItem(name);
-  const [appState, setAppState] = createMutable(
     localState ? JSON.parse(localState) : init
   );
   createEffect(() => localStorage.setItem(name, JSON.stringify(appState)));
@@ -84,12 +75,11 @@ function updateDataGraphFromJsonGraph(dataGraph, jsonGraph) {
 function loadFile(fileBlob) {
   if (fileBlob === undefined) return;
   let reader = new FileReader();
-
   reader.readAsText(fileBlob);
 
   reader.onload = function () {
     const jsonGraph = jsonToGraph(reader.result);
-    updateGlobalGraphFromJsonGraph(jsonGraph);
+    updateDataGraphFromJsonGraph(dataGraph, jsonGraph);
     batch(() => {
       setSourceNode(undefined);
       setNumEdits(numEdits() + 1);
