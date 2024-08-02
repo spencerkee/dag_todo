@@ -27,8 +27,7 @@ function createLocalMutable(name, init) {
   return [appState, setAppState];
 }
 
-function saveFile(state) {
-  // Needed to stringify maps. Source: https://stackoverflow.com/questions/29085197/how-do-you-json-stringify-an-es6-map
+function graphToJson(dataGraph) {
   function replacer(key, value) {
     if (value instanceof Map) {
       return {
@@ -43,7 +42,26 @@ function saveFile(state) {
     }
     return value;
   }
-  let json = JSON.stringify(state, replacer)
+  return JSON.stringify(dataGraph, replacer);
+}
+
+function jsonToGraph(json) {
+  function reviver(key, value) {
+    if (typeof value === 'object' && value !== null) {
+      if (value.dataType === 'Map') {
+        return new Map(value.value);
+      } else if (value.dataType === 'Set') {
+        return new Set(value.value);
+      }
+    }
+    return value;
+  }
+  return JSON.parse(json, reviver);
+}
+
+function saveFile(state) {
+  // Needed to stringify maps. Source: https://stackoverflow.com/questions/29085197/how-do-you-json-stringify-an-es6-map
+  let json = graphToJson(dataGraph);
   let a = document.createElement("a")
   a.href = URL.createObjectURL(
     new Blob([json], { type: "application/json" })
@@ -57,27 +75,21 @@ function openFile() {
   document.getElementById('inputFile').click();
 }
 
+function updateDataGraphFromJsonGraph(dataGraph, jsonGraph) {
+  dataGraph.nodes = jsonGraph.nodes;
+  dataGraph.edges = jsonGraph.edges;
+  dataGraph.graph = jsonGraph.graph;
+}
+
 function loadFile(fileBlob) {
-  function reviver(key, value) {
-    if (typeof value === 'object' && value !== null) {
-      if (value.dataType === 'Map') {
-        return new Map(value.value);
-      } else if (value.dataType === 'Set') {
-        return new Set(value.value);
-      }
-    }
-    return value;
-  }
   if (fileBlob === undefined) return;
   let reader = new FileReader();
 
   reader.readAsText(fileBlob);
 
   reader.onload = function () {
-    const jsonGraph = JSON.parse(reader.result, reviver);
-    dataGraph.nodes = jsonGraph.nodes;
-    dataGraph.edges = jsonGraph.edges;
-    dataGraph.graph = jsonGraph.graph;
+    const jsonGraph = jsonToGraph(reader.result);
+    updateGlobalGraphFromJsonGraph(jsonGraph);
     batch(() => {
       setSourceNode(undefined);
       setNumEdits(numEdits() + 1);
@@ -263,6 +275,18 @@ function reflectList() {
   return orderedUnconnectedNodes;
 }
 
+
+function fetchGraphFromLocalStorage() {
+  debugger;
+  let json = localStorage.getItem('dataGraph');
+  let jsonGraph = jsonToGraph(json);
+  // TODO Is it even necessary to serialize it to json?
+  if (jsonGraph !== null) {
+    updateDataGraphFromJsonGraph(dataGraph, jsonGraph);
+  } else {
+    console.log('jsonGraph is null');
+  }
+}
 /* End of non-graph functions */
 
 /* Start of components */
@@ -276,7 +300,8 @@ function reflectList() {
 const [newTitle, setTitle] = createSignal("");
 const [sourceNode, setSourceNode] = createSignal(undefined);
 const [todos, setTodos] = createSignal([]);
-let dataGraph = new DataGraph();
+let dataGraph = new DataGraph()
+fetchGraphFromLocalStorage();
 const numEdits = dataGraph.numEdits;
 const setNumEdits = dataGraph.setNumEdits;
 
@@ -361,6 +386,13 @@ const App = () => {
       setTitle("");
     });
   };
+
+  // Save graph to local storage on edit.
+  createEffect(() => {
+    let _ = numEdits();
+    const jsonGraph = graphToJson(dataGraph);
+    localStorage.setItem('dataGraph', jsonGraph);
+  });
 
   onMount(() => {
     console.log('mount');
