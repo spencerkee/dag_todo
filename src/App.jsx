@@ -319,6 +319,13 @@ function resetZoom(svgCanvas, svgGroup, zoom) {
 /* Start of components */
 /* End of components */
 
+// https://www.d3indepth.com/zoom-and-pan/
+const zoom = d3.zoom()
+  // TODO constrain zoom and pan.
+  // .scaleExtent([1, 5])
+  // .translateExtent([[0, 0], [width, height]])
+  .on('zoom', handleZoom);
+
 // Global signals. TODO should probably use context in the future.
 const [newTitle, setTitle] = createSignal("");
 // TODO This probably doesn't need to be a signal.
@@ -436,12 +443,6 @@ const App = () => {
       }
     });
 
-    // https://www.d3indepth.com/zoom-and-pan/
-    const zoom = d3.zoom()
-      // TODO constrain zoom and pan.
-      // .scaleExtent([1, 5])
-      // .translateExtent([[0, 0], [width, height]])
-      .on('zoom', handleZoom);
     initZoom(zoom);
     resetZoom(svgCanvas, svgGroup, zoom);
     // TODO Set up this zoomIdentity stuff.
@@ -457,6 +458,7 @@ const App = () => {
         let fileObj = e?.target?.files[0];
         setGraphName(fileObj.name);
         loadFile(fileObj);
+        resetZoom(svgCanvas, svgGroup, zoom);
       }} hidden></input >
       <button onClick={() => openFile()}>Load File</button>
       <input
