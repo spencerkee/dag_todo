@@ -295,6 +295,25 @@ function fetchGraphFromLocalStorage() {
     console.log('jsonGraph in localStorage is null');
   }
 }
+
+function handleZoom(e) {
+  d3.select('svg g')
+    .attr('transform', e.transform);
+}
+
+function initZoom(zoom) {
+  d3.select('svg')
+    .call(zoom);
+}
+
+function resetZoom(svgCanvas, svgGroup, zoom) {
+  const { width, height } = d3.select(svgGroup).node().getBBox();
+  if (width && height) {
+    const scale = Math.min(svgCanvas.clientWidth / width, svgCanvas.clientHeight / height) * 0.95
+    zoom.scaleTo(d3.select(svgCanvas), scale)
+    zoom.translateTo(d3.select(svgCanvas), width / 2, height / 2)
+  }
+}
 /* End of non-graph functions */
 
 /* Start of components */
@@ -416,6 +435,17 @@ const App = () => {
         }
       }
     });
+
+    // https://www.d3indepth.com/zoom-and-pan/
+    const zoom = d3.zoom()
+      // TODO constrain zoom and pan.
+      // .scaleExtent([1, 5])
+      // .translateExtent([[0, 0], [width, height]])
+      .on('zoom', handleZoom);
+    initZoom(zoom);
+    resetZoom(svgCanvas, svgGroup, zoom);
+    // TODO Set up this zoomIdentity stuff.
+    // d3.select('svg g').transition().duration(750).call(zoom.transform, d3.zoomIdentity);
   });
 
   return (
