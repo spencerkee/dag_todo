@@ -484,6 +484,9 @@ const App = () => {
             <input
               type="text"
               value={dataGraph.nodes.get(todo).label}
+              style={
+                { width: "40vw" }
+              }
               onChange={(e) => dataGraph.setNodeLabel(todo, e.currentTarget.value)}
             />
             <button onClick={() => { dataGraph.removeNodeAndContract(todo) }}>
