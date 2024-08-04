@@ -1,22 +1,8 @@
 import * as d3 from "d3";
 import dagreD3 from "dagre-d3/dist/dagre-d3";
 import { batch, createEffect, createSignal, onMount } from "solid-js";
-import { createStore } from "solid-js/store";
 import DataGraph from "./data-graph";
 import "./index.css";
-
-function removeIndex(array, index) {
-  return [...array.slice(0, index), ...array.slice(index + 1)];
-}
-
-function createLocalStore(name, init) {
-  const localState = localStorage.getItem(name);
-  const [appState, setAppState] = createStore(
-    localState ? JSON.parse(localState) : init
-  );
-  createEffect(() => localStorage.setItem(name, JSON.stringify(appState)));
-  return [appState, setAppState];
-}
 
 function objectToJson(object) {
   function replacer(key, value) {
@@ -290,6 +276,8 @@ function fetchGraphFromLocalStorage() {
   // TODO Is it even necessary to serialize it to json?
   if (jsonGraph !== null) {
     console.log('Loading jsonGraph from localStorage');
+    // TODO Save this name in appState
+    setGraphName("");
     updateDataGraphFromJsonGraph(dataGraph, jsonGraph);
   } else {
     console.log('jsonGraph in localStorage is null');
@@ -335,7 +323,7 @@ const [todos, setTodos] = createSignal([]);
 let dataGraph = new DataGraph()
 // TODO Interesting that it's not necessary to set numEdits here.
 fetchGraphFromLocalStorage();
-let appState = fetchAppStateFromLocalStorage();
+// let appState = fetchAppStateFromLocalStorage();
 const numEdits = dataGraph.numEdits;
 const setNumEdits = dataGraph.setNumEdits;
 
