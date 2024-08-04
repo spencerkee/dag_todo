@@ -15,7 +15,7 @@
     "vite-plugin-solid": "^2.8.2"
   },
   "dependencies": {
-    "d3": "^5.2.0",
+    "d3": "^6.2.0",
     "d3-graphviz": "^5.4.0",
     "dagre-d3": "^0.6.4",
     "solid-js": "^1.8.11"
