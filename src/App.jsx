@@ -55,7 +55,9 @@ function saveFile(state) {
   a.download = graphName();
   // Incorporating the timestamp might still be nice.
   // a.download = `todoGraph-${now.toISOString().split('.')[0]}.json`
-  a.click()
+  a.click();
+  // TODO How do we tell if the download was successful or not? We may not want to set the numEditsOnLastLoad in that case.
+  setNumEditsOnLastLoad(numEdits());
 }
 
 function openFile() {
@@ -79,6 +81,7 @@ function loadFile(fileBlob) {
     batch(() => {
       setSourceNode(undefined);
       setNumEdits(numEdits() + 1);
+      setNumEditsOnLastLoad(numEdits());
     });
   }
 
@@ -320,6 +323,7 @@ const [newTitle, setTitle] = createSignal("");
 const [graphName, setGraphName] = createSignal("myGraph.json");
 const [sourceNode, setSourceNode] = createSignal(undefined);
 const [todos, setTodos] = createSignal([]);
+const [numEditsOnLastLoad, setNumEditsOnLastLoad] = createSignal(0);
 let dataGraph = new DataGraph()
 // TODO Interesting that it's not necessary to set numEdits here.
 fetchGraphFromLocalStorage();
@@ -454,6 +458,7 @@ const App = () => {
         value={graphName()}
         onChange={(e) => setGraphName(e.currentTarget.value)}
       />
+      <Show when={numEdits() > numEditsOnLastLoad()}>(unsaved)</Show>
       <form onSubmit={addTodo}>
         <input
           placeholder="enter todo and click +"
