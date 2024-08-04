@@ -489,13 +489,12 @@ const App = () => {
             <button onClick={() => { dataGraph.removeNodeAndContract(todo) }}>
               x
             </button>
+            <button onClick={() => { setSourceNode(todo) }}>
+              o
+            </button>
+            {/* Show unconnected nodes view */}
             <Show
               when={sourceNode() !== undefined}
-              fallback={
-                <button onClick={() => { setSourceNode(todo) }}>
-                  o
-                </button>
-              }
             >
               <button onClick={() => { dataGraph.setEdge(sourceNode(), todo) }}>
                 {">"}
