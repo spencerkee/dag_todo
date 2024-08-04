@@ -260,8 +260,8 @@ function processNodeClick(nodeId) {
   // setSourceNode(undefined);
 }
 
-function nodeClickListener(nodeId) {
-  console.log('node clicked', nodeId);
+function nodeClickListener(event) {
+  let nodeId = event.target.__data__;
   processNodeClick(nodeId, sourceNode, setSourceNode);
 }
 
