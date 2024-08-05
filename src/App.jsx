@@ -493,8 +493,16 @@ const App = () => {
       <svg id="svg-canvas" ref={svgCanvas}>
         <g id="svg-g" ref={svgGroup}></g>
       </svg>
-      {/* TODO I think there's some other way of doing this */}
-      <div>Source Node: {sourceNode() === undefined ? "" : dataGraph.nodes.get(sourceNode()).label}</div>
+      <Show when={sourceNode() !== undefined}>
+        Source Node: <input
+          type="text"
+          value={dataGraph.nodes.get(sourceNode()).label}
+          style={
+            { width: "40vw" }
+          }
+          onChange={(e) => dataGraph.setNodeLabel(sourceNode(), e.currentTarget.value)}
+        />
+      </Show>
       <For each={todos()}>
         {(todo, i) => (
           <div>
