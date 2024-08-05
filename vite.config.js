@@ -17,6 +17,7 @@ export default defineConfig({
   },
   build: {
     target: 'esnext',
+    // TODO Undo this later once the firefox javascript set thing is resolved.
     minify: false
   },
 });

@@ -35,6 +35,21 @@ You can deploy the `dist` folder to any static host provider (netlify, surge, no
 
 # TODO
 
+### 2024-08-04
+If I want to have undo-redo there are a few options:
+- https://github.com/elite174/solid-undo-redo
+- https://github.com/mountfx/solid-record
+- https://primitives.solidjs.community/package/history
+Leaning towards this one because it seems official.
+
+Approaches:
+1) Insert the dataGraph into a store
+    This is the easiest if it works. Restoring may be weird because it contains a signal. Map/Sets won't track updates though, so possibly a no go unless those are also reactive?
+2) Store the stringify'd version of the graph and restore it with undo.
+    Space/time inefficient but possibly fine. Easiest approach to do now.
+3) Make the members of the dataGraph reactive
+    Possibly not too difficult, can just use the solidjs reactive set and map. Wait how do you listen for changes across all of them? I guess I could create a memo, which makes it so that everything that depends on the state of the graph is updated simultaneously a single time. The memo function would just drag in nodes/edges/graph. Any change I make to them needs to be batched. Oh wait, graph is a map to sets. I would need to get references to those sets when listening for changes. Hmm.
+
 ### 2024-08-02
 For storing the graph name, there's a few options.
 1) On the graph object itself

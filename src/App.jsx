@@ -1,3 +1,4 @@
+import { createUndoHistory } from "@solid-primitives/history";
 import * as d3 from "d3";
 import dagreD3 from "dagre-d3/dist/dagre-d3";
 import { batch, createEffect, createSignal, onMount } from "solid-js";
@@ -330,6 +331,21 @@ fetchGraphFromLocalStorage();
 // let appState = fetchAppStateFromLocalStorage();
 const numEdits = dataGraph.numEdits;
 const setNumEdits = dataGraph.setNumEdits;
+const history = createUndoHistory(() => {
+  // track the changes to the state (and clone if you need to)
+  const v = numEdits();
+  const json = graphToJson(dataGraph);
+  console.log('Saving jsonGraph to in history');
+
+  // return a callback to set the state back to the tracked value
+  return () => {
+    console.log('Loading jsonGraph from history');
+    const jsonGraph = jsonToGraph(json);
+    // TODO Save this name in appState
+    updateDataGraphFromJsonGraph(dataGraph, jsonGraph);
+    setNumEdits(v);
+  };
+});
 
 const App = () => {
   console.log('App');
@@ -468,6 +484,12 @@ const App = () => {
         />
         <button>+</button>
       </form>
+      <button disabled={!history.canUndo()} onClick={history.undo}>
+        Undo
+      </button>
+      <button disabled={!history.canRedo()} onClick={history.redo}>
+        Redo
+      </button>
       <svg id="svg-canvas" ref={svgCanvas}>
         <g id="svg-g" ref={svgGroup}></g>
       </svg>
