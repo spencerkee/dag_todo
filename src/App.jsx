@@ -53,7 +53,7 @@ function saveFile(state) {
     new Blob([json], { type: "application/json" })
   )
   let now = new Date();
-  a.download = graphName();
+  a.download = `${graphName()}_${now.toISOString().split('.')[0]}.md`;
   // Incorporating the timestamp might still be nice.
   // a.download = `todoGraph-${now.toISOString().split('.')[0]}.json`
   a.click();
@@ -506,7 +506,9 @@ const App = () => {
       <input type="file" name="" id='inputFile' onChange={(e) => {
         // TODO Not sure about this option chaining.
         let fileObj = e?.target?.files[0];
-        setGraphName(fileObj.name);
+        // Works even if there's no extension.
+        let filenameWithoutExtension = fileObj.name.replace(/\.[^/.]+$/, "");
+        setGraphName(filenameWithoutExtension);
         loadFile(fileObj);
         resetZoom(svgCanvas, svgGroup, zoom);
       }} hidden></input >
