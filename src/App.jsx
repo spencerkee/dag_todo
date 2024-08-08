@@ -553,8 +553,8 @@ const App = () => {
           <div>
             <input
               type="checkbox"
-            // checked={todo.done}
-            // onChange={(e) => setTodos(i(), "done", e.currentTarget.checked)}
+              checked={dataGraph.nodes.get(todo).completed || false}
+              onChange={(e) => dataGraph.nodes.get(todo).completed = e.target.checked}
             />
             <input
               type="text"
