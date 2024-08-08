@@ -151,15 +151,17 @@ function convertDataGraphToDagre(dataGraph) {
 
   // Clone attrs here becaues otherwise when we render the renderGraph it will add attributes to the dataGraph.
   for (const [id, nodeAttrs] of dataGraph.nodes.entries()) {
-    const nodeAttrsClone = structuredClone(nodeAttrs);
-    g.setNode(id, {
-      ...nodeAttrsClone,
+    const d3NodeAttrs = {
+      label: nodeAttrs.label,
       // Round the corners of the nodes
       rx: 5,
       ry: 5,
-    });
+    };
+    if (nodeAttrs.completed) {
+      d3NodeAttrs.class = "completed";
+    }
+    g.setNode(id, d3NodeAttrs);
   }
-
   for (const [edge, edgeAttrs] of dataGraph.edges.entries()) {
     let [source, target] = edge.split(',');
     const edgeAttrsClone = structuredClone(edgeAttrs);
@@ -481,6 +483,7 @@ const App = () => {
   onMount(() => {
     console.log('mount');
     /* Event Listeners */
+    // Listen for the delete key to remove nodes.
     window.addEventListener('keyup', function (e) {
       const key = e.key;
       if (key === "Delete") {
@@ -554,7 +557,11 @@ const App = () => {
             <input
               type="checkbox"
               checked={dataGraph.nodes.get(todo).completed || false}
-              onChange={(e) => dataGraph.nodes.get(todo).completed = e.target.checked}
+              onChange={(e) => {
+                dataGraph.nodes.get(todo).completed = e.target.checked;
+                setNumEdits(numEdits() + 1);
+              }
+              }
             />
             <input
               type="text"

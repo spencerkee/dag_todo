@@ -41,3 +41,7 @@ text {
   stroke: #333;
   stroke-width: 1.5px;
 }
+
+g.completed>rect {
+  fill: #90EE90;
+}
