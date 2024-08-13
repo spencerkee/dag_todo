@@ -35,6 +35,47 @@ You can deploy the `dist` folder to any static host provider (netlify, surge, no
 
 # TODO
 
+### 2024-08-12
+Okay I want to not show completed nodes. How do I do that?
+- Create a helper function which I wrap every .nodes/.graph/.edges call with. This helper function takes in showCompleted() signal and constructs a graph on the fly where I delete all of the completed nodes and they get contracted.
+
+That's probably the best bet. Don't want to think more about it, let's just try. Wait what intricacies are there? If I try to add a node I'll still add it to the main graph. If showCompleted() is true, I need to handle the signals. The returned graph should have the same signal (in an identity sense).
+
+How do I make sure that updates are made to the original dataGraph? All the setters need to go to dataGraph and all the getters need to go to fetchDataGraph(dataGraph).
+
+Setters:
+- addNode
+- setNodeLabel
+- removeNode
+- removeNodeAndContract
+- setEdge
+- removeEdge
+
+Probably instead of having getters everywhere I should create a layer. Also if I move towards a pure function approach it's easier to make things reactive.
+
+function fetchDataGraph(dataGraph, shouldShowCompleted) {
+  debugger;
+  console.log(`fetchDataGraph shouldShowCompleted=${shouldShowCompleted}`);
+  if (shouldShowCompleted) {
+    return dataGraph;
+  }
+  let hiddenCompletedGraph = new DataGraph();
+
+  // updateDataGraphFromJsonGraph(hiddenCompletedGraph, dataGraph);
+  hiddenCompletedGraph.nodes = structuredClone(dataGraph.nodes);
+  hiddenCompletedGraph.edges = structuredClone(dataGraph.edges);
+  hiddenCompletedGraph.graph = structuredClone(dataGraph.graph);
+  // I think I'm not going to do these for the time being since I always want to update the dataGraph. So I don't batch these changes because there's no signal updates.
+  // hiddenCompletedGraph.numEdits = dataGraph.numEdits;
+  // hiddenCompletedGraph.setNumEdits = dataGraph.setNumEdits;
+  for (const [id, node] of dataGraph.nodes) {
+    if (node.completed) {
+      hiddenCompletedGraph.removeNodeAndContract(id);
+    }
+  }
+  return hiddenCompletedGraph;
+}
+
 ### 2024-08-04
 If I want to have undo-redo there are a few options:
 - https://github.com/elite174/solid-undo-redo
