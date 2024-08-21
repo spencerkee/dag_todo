@@ -23,8 +23,8 @@ function objectToJson(object) {
   return JSON.stringify(object, replacer);
 }
 
-function graphToJson(dataGraph) {
-  return objectToJson(dataGraph);
+function graphToJson(graph) {
+  return objectToJson(graph);
 }
 
 function jsonToObject(json) {
@@ -369,7 +369,8 @@ const [graphName, setGraphName] = createSignal("myGraph.json");
 const [sourceNode, setSourceNode] = createSignal(undefined);
 const [todos, setTodos] = createSignal([]);
 const [numEditsOnLastLoad, setNumEditsOnLastLoad] = createSignal(0);
-let dataGraph = new DataGraph()
+let dataGraph = new DataGraph();
+let viewGraph = new DataGraph();
 // TODO Interesting that it's not necessary to set numEdits here.
 fetchGraphFromLocalStorage();
 // let appState = fetchAppStateFromLocalStorage();
@@ -390,6 +391,14 @@ const history = createUndoHistory(() => {
     setNumEdits(v);
   };
 });
+
+function updateViewGraph(viewGraph, dataGraph) {
+  console.log('start');
+  viewGraph.nodes = structuredClone(dataGraph.nodes);
+  viewGraph.edges = structuredClone(dataGraph.edges);
+  viewGraph.graph = structuredClone(dataGraph.graph);
+  console.log('end');
+}
 
 const App = () => {
   console.log('App');
@@ -418,6 +427,7 @@ const App = () => {
   // Create the renderer
   const renderer = new dagreD3.render();
 
+  // TODO This should be based on viewGraph
   let renderGraph = convertDataGraphToDagre(dataGraph);
 
   // Set up an SVG group so that we can translate the final graph.
@@ -437,8 +447,10 @@ const App = () => {
     batch(() => {
       performTransitiveReduction(dataGraph);
     })
+    console.log('view');
+    updateViewGraph(viewGraph, dataGraph);
     console.log('convert');
-    renderGraph = convertDataGraphToDagre(dataGraph);
+    renderGraph = convertDataGraphToDagre(viewGraph);
     console.log('render');
     renderer(d3.select(svgGroup), renderGraph);
 
