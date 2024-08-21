@@ -2,609 +2,588 @@ import { createUndoHistory } from "@solid-primitives/history";
 import * as d3 from "d3";
 import dagreD3 from "dagre-d3/dist/dagre-d3";
 import { batch, createEffect, createSignal, onMount } from "solid-js";
-import DataGraph from "./data-graph";
+import * as dg from "./dg.js";
 import "./index.css";
 
+function mapToJson(map) {
+    const obj = {}
+    for (let [k, v] of map)
+        obj[k] = v
+    return JSON.stringify(obj)
+}
+
 function objectToJson(object) {
-  function replacer(key, value) {
-    if (value instanceof Map) {
-      return {
-        dataType: 'Map',
-        value: Array.from(value.entries()), // or with spread: value: [...value]
-      };
-    } else if (value instanceof Set) {
-      return {
-        dataType: 'Set',
-        value: Array.from(value),
-      };
+    function replacer(key, value) {
+        if (value instanceof Map) {
+            return {
+                dataType: 'Map',
+                value: Array.from(value.entries()), // or with spread: value: [...value]
+            };
+        } else if (value instanceof Set) {
+            return {
+                dataType: 'Set',
+                value: Array.from(value),
+            };
+        }
+        return value;
     }
-    return value;
-  }
-  return JSON.stringify(object, replacer);
+    return JSON.stringify(object, replacer);
 }
 
 function graphToJson(graph) {
-  return objectToJson(graph);
+    return objectToJson(graph);
 }
 
 function jsonToObject(json) {
-  function reviver(key, value) {
-    if (typeof value === 'object' && value !== null) {
-      if (value.dataType === 'Map') {
-        return new Map(value.value);
-      } else if (value.dataType === 'Set') {
-        return new Set(value.value);
-      }
+    function reviver(key, value) {
+        if (typeof value === 'object' && value !== null) {
+            if (value.dataType === 'Map') {
+                return new Map(value.value);
+            } else if (value.dataType === 'Set') {
+                return new Set(value.value);
+            }
+        }
+        return value;
     }
-    return value;
-  }
-  return JSON.parse(json, reviver);
+    return JSON.parse(json, reviver);
 }
 
 function jsonToGraph(json) {
-  return jsonToObject(json);
+    return jsonToObject(json);
 }
 
 function saveFile(state) {
-  // Needed to stringify maps. Source: https://stackoverflow.com/questions/29085197/how-do-you-json-stringify-an-es6-map
-  let json = graphToJson(dataGraph);
-  let a = document.createElement("a")
-  a.href = URL.createObjectURL(
-    new Blob([json], { type: "application/json" })
-  )
-  let now = new Date();
-  a.download = `${graphName()}_${now.toISOString().split('.')[0]}.md`;
-  // Incorporating the timestamp might still be nice.
-  // a.download = `todoGraph-${now.toISOString().split('.')[0]}.json`
-  a.click();
-  // TODO How do we tell if the download was successful or not? We may not want to set the numEditsOnLastLoad in that case.
-  setNumEditsOnLastLoad(numEdits());
+    // Needed to stringify maps. Source: https://stackoverflow.com/questions/29085197/how-do-you-json-stringify-an-es6-map
+    let json = graphToJson(D);
+    let a = document.createElement("a")
+    a.href = URL.createObjectURL(
+        new Blob([json], { type: "application/json" })
+    )
+    let now = new Date();
+    a.download = `${graphName()}_${now.toISOString().split('.')[0]}.md`;
+    // Incorporating the timestamp might still be nice.
+    // a.download = `todoGraph-${now.toISOString().split('.')[0]}.json`
+    a.click();
+    // TODO How do we tell if the download was successful or not? We may not want to set the numEditsOnLastLoad in that case.
+    setNumEditsOnLastLoad(numEdits());
 }
 
 function openFile() {
-  document.getElementById('inputFile').click();
+    document.getElementById('inputFile').click();
 }
 
 function updateDataGraphFromJsonGraph(dataGraph, jsonGraph) {
-  dataGraph.nodes = jsonGraph.nodes;
-  dataGraph.edges = jsonGraph.edges;
-  dataGraph.graph = jsonGraph.graph;
+    dataGraph.nodes = jsonGraph.nodes;
+    dataGraph.edges = jsonGraph.edges;
+    dataGraph.graph = jsonGraph.graph;
 }
 
 function loadFile(fileBlob) {
-  if (fileBlob === undefined) return;
-  let reader = new FileReader();
-  reader.readAsText(fileBlob);
+    if (fileBlob === undefined) return;
+    let reader = new FileReader();
+    reader.readAsText(fileBlob);
 
-  reader.onload = function () {
-    const jsonGraph = jsonToGraph(reader.result);
-    updateDataGraphFromJsonGraph(dataGraph, jsonGraph);
-    batch(() => {
-      setSourceNode(undefined);
-      setNumEdits(numEdits() + 1);
-      setNumEditsOnLastLoad(numEdits());
-    });
-  }
+    reader.onload = function () {
+        const jsonGraph = jsonToGraph(reader.result);
+        updateDataGraphFromJsonGraph(D, jsonGraph);
+        batch(() => {
+            setSourceNode(undefined);
+            setNumEdits(numEdits() + 1);
+            setNumEditsOnLastLoad(numEdits());
+        });
+    }
 
-  reader.onerror = function () {
-    console.log(reader.error);
-  };
+    reader.onerror = function () {
+        console.log(reader.error);
+    };
+}
+
+function copyDataGraphToViewGraph(dataGraph, viewGraph) {
+    // TODO Structured clone?
+    viewGraph.nodes.clear();
+    for (let [nodeId, node] of dataGraph.nodes) {
+        viewGraph.nodes.set(nodeId, node);
+    }
+
+    viewGraph.edges.clear();
+    for (let [edgeKey, edge] of dataGraph.edges) {
+        viewGraph.edges.set(edgeKey, edge);
+    }
+
+    viewGraph.graph.clear();
+    for (let [nodeId, children] of dataGraph.graph) {
+        viewGraph.graph.set(nodeId, children);
+    }
 }
 
 function newGraph() {
-  return new dagreD3.graphlib.Graph()
-    .setGraph({ rankdir: "LR" })
-    .setDefaultEdgeLabel(function () { return {}; });
-}
-
-/* Start graph functions */
-function dfs(graph, start, neighborFunc) {
-  const stack = [start];
-  const visited = new Set();
-  const result = [];
-
-  while (stack.length) {
-    const vertex = stack.pop();
-
-    if (!visited.has(vertex)) {
-      visited.add(vertex);
-      result.push(vertex);
-
-      for (const child of graph[neighborFunc](vertex)) {
-        stack.push(child);
-      }
-    }
-  }
-
-  return result;
-}
-
-function getUnconnectedNodes(graph, node) {
-  let allNodes = new Set(graph.nodes);
-  let connectedNodes = new Set([node]);
-  getDescendents(graph, node).forEach(connectedNodes.add, connectedNodes);
-  getAncestors(graph, node).forEach(connectedNodes.add, connectedNodes);
-  let unconnectedNodes = allNodes.difference(connectedNodes);
-  let orderedUnconnectedNodes = topologicalSort(g).filter(n => unconnectedNodes.has(n));
-  return orderedUnconnectedNodes;
+    return new dagreD3.graphlib.Graph()
+        .setGraph({ rankdir: "LR" })
+        .setDefaultEdgeLabel(function () { return {}; });
 }
 
 function performTransitiveReduction(dataGraph) {
-  /*
-  For each node x in the graph, start DFS from child of x (called y).
-  For each descendent of y (called z) remove the edge x,z
-  */
-  for (const [parent, children] of dataGraph.graph) {
-    for (const child of children) {
-      for (const descendent of dataGraph.getDescendents(child)) {
-        if (dataGraph.edges.has(`${parent},${descendent}`)) {
-          console.log(`Removing edge from ${parent} to ${descendent}`);
-          dataGraph.removeEdge(parent, descendent);
+    /*
+    For each node x in the graph, start DFS from child of x (called y).
+    For each descendent of y (called z) remove the edge x,z
+    */
+    for (const [parent, children] of dataGraph.graph) {
+        for (const child of children) {
+            for (const descendent of dg.getDescendents(dataGraph, child)) {
+                if (dataGraph.edges.has(`${parent},${descendent}`)) {
+                    console.log(`Removing edge from ${parent} to ${descendent}`);
+                    dg.removeEdge(dataGraph, parent, descendent);
+                }
+            }
         }
-      }
     }
-  }
 }
 
 function convertDataGraphToDagre(dataGraph) {
-  let g = newGraph();
+    let g = newGraph();
 
-  // Clone attrs here becaues otherwise when we render the renderGraph it will add attributes to the dataGraph.
-  for (const [id, nodeAttrs] of dataGraph.nodes.entries()) {
-    const d3NodeAttrs = {
-      label: nodeAttrs.label,
-      // Round the corners of the nodes
-      rx: 5,
-      ry: 5,
-    };
-    if (nodeAttrs.completed) {
-      d3NodeAttrs.class = "completed";
+    // Clone attrs here becaues otherwise when we render the renderGraph it will add attributes to the dataGraph.
+    for (const [id, nodeAttrs] of dataGraph.nodes.entries()) {
+        const d3NodeAttrs = {
+            label: nodeAttrs.label,
+            // Round the corners of the nodes
+            rx: 5,
+            ry: 5,
+        };
+        if (nodeAttrs.completed) {
+            d3NodeAttrs.class = "completed";
+        }
+        g.setNode(id, d3NodeAttrs);
     }
-    g.setNode(id, d3NodeAttrs);
-  }
-  for (const [edge, edgeAttrs] of dataGraph.edges.entries()) {
-    let [source, target] = edge.split(',');
-    const edgeAttrsClone = structuredClone(edgeAttrs);
-    g.setEdge(source, target, edgeAttrsClone);
-  }
+    for (const [edge, edgeAttrs] of dataGraph.edges.entries()) {
+        let [source, target] = edge.split(',');
+        const edgeAttrsClone = structuredClone(edgeAttrs);
+        g.setEdge(source, target, edgeAttrsClone);
+    }
 
-  return g;
+    return g;
 }
 
-function topologicalSort(graph) {
-  const visited = new Set();
-  const stack = [];
-
-  for (const node of graph.nodes.keys()) {
-    if (!visited.has(node)) {
-      topologicalSortHelper(graph, node, visited, stack);
+function updateGraphFromLocalStorage(G) {
+    let json = localStorage.getItem('dataGraph');
+    let jsonGraph = jsonToGraph(json);
+    // TODO Is it even necessary to serialize it to json?
+    if (jsonGraph !== null) {
+        console.log('Loading jsonGraph from localStorage');
+        // TODO Save this name in appState
+        setGraphName("");
+        updateDataGraphFromJsonGraph(G, jsonGraph);
+    } else {
+        console.log('jsonGraph in localStorage is null');
     }
-  }
-
-  return stack.reverse();
 }
 
-function topologicalSortHelper(graph, node, visited, stack) {
-  visited.add(node);
-
-  for (const neighbor of graph.getChildren(node)) {
-    if (!visited.has(neighbor)) {
-      topologicalSortHelper(graph, neighbor, visited, stack);
-    }
-  }
-
-  stack.push(node);
+function handleZoom(e) {
+    d3.select('svg g')
+        .attr('transform', e.transform);
 }
 
-/* End graph functions */
+function initZoom(zoom) {
+    d3.select('svg')
+        .call(zoom);
+}
+
+function resetZoom(svgCanvas, svgGroup, zoom) {
+    const { width, height } = d3.select(svgGroup).node().getBBox();
+    if (width && height) {
+        const scale = Math.min(svgCanvas.clientWidth / width, svgCanvas.clientHeight / height) * 0.95
+        zoom.scaleTo(d3.select(svgCanvas), scale)
+        zoom.translateTo(d3.select(svgCanvas), width / 2, height / 2)
+    }
+}
+
+function fallbackCopyTextToClipboard(text) {
+    var textArea = document.createElement("textarea");
+    textArea.value = text;
+
+    // Avoid scrolling to bottom
+    textArea.style.top = "0";
+    textArea.style.left = "0";
+    textArea.style.position = "fixed";
+
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+
+    try {
+        var successful = document.execCommand('copy');
+        var msg = successful ? 'successful' : 'unsuccessful';
+        console.log('Fallback: Copying text command was ' + msg);
+    } catch (err) {
+        console.error('Fallback: Oops, unable to copy', err);
+    }
+
+    document.body.removeChild(textArea);
+}
+
+function copyTextToClipboard(text) {
+    if (!navigator.clipboard) {
+        fallbackCopyTextToClipboard(text);
+        return;
+    }
+    navigator.clipboard.writeText(text).then(function () {
+        console.log('Async: Copying to clipboard was successful!');
+    }, function (err) {
+        console.error('Async: Could not copy text: ', err);
+    });
+}
+
+function copyGraphToClipboard(dataGraph) {
+    let json = graphToJson(dataGraph);
+    copyTextToClipboard(json);
+}
 
 /* Start of non-graph functions */
 // returns if the element or one of its ancestors matches the selector, return the matching
 // element or ancestor else null.
 // https://stackoverflow.com/questions/16863917/check-if-class-exists-somewhere-in-parent
 function elementOrParentMatchesSelector(element, selector) {
-  // This is a race condition with removing redundant edges I think?
-  if (element === null) return null;
-  // Probably at the level of the HTML object at this point.
-  if (typeof element.matches !== 'function') return null;
-  if (element.matches(selector)) return element;
-  // No parent
-  if (element.parentNode === undefined) return null;
-  return elementOrParentMatchesSelector(element.parentNode, selector);
+    // This is a race condition with removing redundant edges I think?
+    if (element === null) return null;
+    // Probably at the level of the HTML object at this point.
+    if (typeof element.matches !== 'function') return null;
+    if (element.matches(selector)) return element;
+    // No parent
+    if (element.parentNode === undefined) return null;
+    return elementOrParentMatchesSelector(element.parentNode, selector);
 }
 
 function genericClickListener(e) {
-  console.log('click in window');
-  let node_or_null = elementOrParentMatchesSelector(e.target, 'g.node');
-  // TODO Could do this more efficiently by doing this in the above step.
-  let svg_or_null = elementOrParentMatchesSelector(e.target, '#svg-canvas');
+    console.log('click in window');
+    let node_or_null = elementOrParentMatchesSelector(e.target, 'g.node');
+    // TODO Could do this more efficiently by doing this in the above step.
+    let svg_or_null = elementOrParentMatchesSelector(e.target, '#svg-canvas');
 
-  if (node_or_null === null && svg_or_null !== null && sourceNode() !== undefined) {
-    // Clicked inside box, but not on a node so clear source node.
-    // clearSourceNode();
-    console.log('window clearing source node');
-    setSourceNode(undefined);
-    // updateList();
+    if (node_or_null === null && svg_or_null !== null && sourceNode() !== undefined) {
+        // Clicked inside box, but not on a node so clear source node.
+        // clearSourceNode();
+        console.log('window clearing source node');
+        setSourceNode(undefined);
+        // updateList();
 
-    // Could set the graph label if we want.
-    // d3.select("#graphLabel").text("");
-  }
+        // Could set the graph label if we want.
+        // d3.select("#graphLabel").text("");
+    }
 }
 
 function processNodeClick(nodeId) {
-  // First click with no source node set.
-  if (sourceNode() === undefined) {
-    setSourceNode(nodeId);
-    // updateList(); // This is done in the next step.
-    return;
-  }
+    // First click with no source node set.
+    if (sourceNode() === undefined) {
+        setSourceNode(nodeId);
+        // updateList(); // This is done in the next step.
+        return;
+    }
 
-  // Clear on self click
-  if (sourceNode() === nodeId) {
-    setSourceNode(undefined);
-    return;
-  }
+    // Clear on self click
+    if (sourceNode() === nodeId) {
+        setSourceNode(undefined);
+        return;
+    }
 
-  // Add edge
-  console.log(`Adding edge from '${sourceNode()}' to '${nodeId}'`);
-  dataGraph.setEdge(sourceNode(), nodeId);
-  // Don't do the below in case you want to set multiple children
-  // setSourceNode(undefined);
+    // Add edge
+    console.log(`Adding edge from '${sourceNode()}' to '${nodeId}'`);
+    dg.setEdge(D, sourceNode(), nodeId);
+    // Don't do the below in case you want to set multiple children
+    // setSourceNode(undefined);
 }
 
 function nodeClickListener(event) {
-  let nodeId = event.target.__data__;
-  processNodeClick(nodeId, sourceNode, setSourceNode);
+    let nodeId = event.target.__data__;
+    processNodeClick(nodeId, sourceNode, setSourceNode);
 }
 
 function reflectList() {
-  if (sourceNode() === undefined) {
-    console.log('reflectList sourceNode is undefined');
-    console.log(`reflectList sources: ${dataGraph.sources()}`);
-    return dataGraph.sources();
-  }
-  console.log(`reflectList sourceNode is ${sourceNode()}`);
-  let unconnectedNodes = dataGraph.getUnconnectedNodes(sourceNode());
-  let orderedUnconnectedNodes = topologicalSort(dataGraph).filter(n => unconnectedNodes.has(n));
-  console.log(`reflectList orderedUnconnectedNodes: ${orderedUnconnectedNodes}`);
-  return orderedUnconnectedNodes;
+    if (sourceNode() === undefined) {
+        console.log('reflectList sourceNode is undefined');
+        console.log(`reflectList sources: ${dg.sources(D)}`);
+        return dg.sources(D);
+    }
+    console.log(`reflectList sourceNode is ${sourceNode()}`);
+    let unconnectedNodes = dg.getUnconnectedNodes(D, sourceNode());
+    let orderedUnconnectedNodes = dg.topologicalSort(D).filter(n => unconnectedNodes.has(n));
+    console.log(`reflectList orderedUnconnectedNodes: ${orderedUnconnectedNodes}`);
+    return orderedUnconnectedNodes;
 }
 
-function fetchAppStateFromLocalStorage() {
-  let json = localStorage.getItem('appState');
-  let appState = json !== null ? JSON.parse(json) : {};
-  return appState;
-}
-
-function fetchGraphFromLocalStorage() {
-  let json = localStorage.getItem('dataGraph');
-  let jsonGraph = jsonToGraph(json);
-  // TODO Is it even necessary to serialize it to json?
-  if (jsonGraph !== null) {
-    console.log('Loading jsonGraph from localStorage');
-    // TODO Save this name in appState
-    setGraphName("");
-    updateDataGraphFromJsonGraph(dataGraph, jsonGraph);
-  } else {
-    console.log('jsonGraph in localStorage is null');
-  }
-}
-
-function handleZoom(e) {
-  d3.select('svg g')
-    .attr('transform', e.transform);
-}
-
-function initZoom(zoom) {
-  d3.select('svg')
-    .call(zoom);
-}
-
-function resetZoom(svgCanvas, svgGroup, zoom) {
-  const { width, height } = d3.select(svgGroup).node().getBBox();
-  if (width && height) {
-    const scale = Math.min(svgCanvas.clientWidth / width, svgCanvas.clientHeight / height) * 0.95
-    zoom.scaleTo(d3.select(svgCanvas), scale)
-    zoom.translateTo(d3.select(svgCanvas), width / 2, height / 2)
-  }
-}
-
-function fallbackCopyTextToClipboard(text) {
-  var textArea = document.createElement("textarea");
-  textArea.value = text;
-
-  // Avoid scrolling to bottom
-  textArea.style.top = "0";
-  textArea.style.left = "0";
-  textArea.style.position = "fixed";
-
-  document.body.appendChild(textArea);
-  textArea.focus();
-  textArea.select();
-
-  try {
-    var successful = document.execCommand('copy');
-    var msg = successful ? 'successful' : 'unsuccessful';
-    console.log('Fallback: Copying text command was ' + msg);
-  } catch (err) {
-    console.error('Fallback: Oops, unable to copy', err);
-  }
-
-  document.body.removeChild(textArea);
-}
-
-function copyTextToClipboard(text) {
-  if (!navigator.clipboard) {
-    fallbackCopyTextToClipboard(text);
-    return;
-  }
-  navigator.clipboard.writeText(text).then(function () {
-    console.log('Async: Copying to clipboard was successful!');
-  }, function (err) {
-    console.error('Async: Could not copy text: ', err);
-  });
-}
-
-function copyGraphToClipboard(dataGraph) {
-  let json = graphToJson(dataGraph);
-  copyTextToClipboard(json);
-}
-
-/* End of non-graph functions */
-
-/* Start of components */
-/* End of components */
+/* Reactive functions? */
+// function up() {
+//     setNumEdits(numEdits() + 1);
+// }
 
 // https://www.d3indepth.com/zoom-and-pan/
 const zoom = d3.zoom()
-  // TODO constrain zoom and pan.
-  // .scaleExtent([1, 5])
-  // .translateExtent([[0, 0], [width, height]])
-  .on('zoom', handleZoom);
+    // TODO constrain zoom and pan.
+    // .scaleExtent([1, 5])
+    // .translateExtent([[0, 0], [width, height]])
+    .on('zoom', handleZoom);
 
-// Global signals. TODO should probably use context in the future.
+/* Global signals. TODO should probably use context in the future. */
+const [numEdits, setNumEdits] = createSignal(0);
 const [newTitle, setTitle] = createSignal("");
 // TODO This probably doesn't need to be a signal.
 const [graphName, setGraphName] = createSignal("myGraph.json");
 const [sourceNode, setSourceNode] = createSignal(undefined);
 const [todos, setTodos] = createSignal([]);
 const [numEditsOnLastLoad, setNumEditsOnLastLoad] = createSignal(0);
-let dataGraph = new DataGraph();
-let viewGraph = new DataGraph();
-// TODO Interesting that it's not necessary to set numEdits here.
-fetchGraphFromLocalStorage();
-// let appState = fetchAppStateFromLocalStorage();
-const numEdits = dataGraph.numEdits;
-const setNumEdits = dataGraph.setNumEdits;
-const history = createUndoHistory(() => {
-  // track the changes to the state (and clone if you need to)
-  const v = numEdits();
-  const json = graphToJson(dataGraph);
-  console.log('Saving jsonGraph to in history');
-
-  // return a callback to set the state back to the tracked value
-  return () => {
-    console.log('Loading jsonGraph from history');
-    const jsonGraph = jsonToGraph(json);
-    // TODO Save this name in appState
-    updateDataGraphFromJsonGraph(dataGraph, jsonGraph);
-    setNumEdits(v);
-  };
-});
-
-function updateViewGraph(viewGraph, dataGraph) {
-  console.log('start');
-  viewGraph.nodes = structuredClone(dataGraph.nodes);
-  viewGraph.edges = structuredClone(dataGraph.edges);
-  viewGraph.graph = structuredClone(dataGraph.graph);
-  console.log('end');
+const [showCompleted, setShowCompleted] = createSignal(true);
+const D = {
+    nodes: new Map(),
+    edges: new Map(),
+    graph: new Map(),
+    numEdits: numEdits,
+    setNumEdits: setNumEdits,
+}
+// TODO Do I need to trigger a render here?
+updateGraphFromLocalStorage(D);
+const V = {
+    nodes: new Map(),
+    edges: new Map(),
+    graph: new Map(),
 }
 
 const App = () => {
-  console.log('App');
+    console.log('App');
 
-  // let aId = dataGraph.addNode("a");
-  // let bId = dataGraph.addNode("b");
-  // let cId = dataGraph.addNode("c");
-  // let dId = dataGraph.addNode("d");
-  // dataGraph.setEdge(aId, bId, {
-  //   style: "stroke: #f66; stroke-width: 3px; stroke-dasharray: 5, 5;",
-  //   arrowheadStyle: "fill: #f66"
-  // });
-  // dataGraph.setEdge(bId, cId, {
-  //   label: "B to C",
-  //   labelStyle: "font-style: italic; text-decoration: underline;"
-  // });
-  // dataGraph.setEdge(aId, cId, {
-  //   label: "line interpolation different",
-  //   curve: d3.curveBasis
-  // });
-  // // dataGraph.removeNode(id1);
-  // console.log(dataGraph);
-  // // console.log(dataGraph.getNodeIdByLabel('b'));
+    // console.log('init');
+    // batch(() => {
+    //     let aId = dg.addNode(D, "a");
+    //     let bId = dg.addNode(D, "b");
+    //     let cId = dg.addNode(D, "c");
+    //     let dId = dg.addNode(D, "d");
+    //     console.log(`D.nodes=${mapToJson(D.nodes)}`);
 
-  let svgGroup2 = d3.select("svg g");
-  // Create the renderer
-  const renderer = new dagreD3.render();
+    //     dg.setEdge(D, aId, bId, {
+    //         style: "stroke: #f66; stroke-width: 3px; stroke-dasharray: 5, 5;",
+    //         arrowheadStyle: "fill: #f66"
+    //     });
+    //     dg.setEdge(D, bId, cId, {
+    //         label: "B to C",
+    //         labelStyle: "font-style: italic; text-decoration: underline;"
+    //     });
+    //     dg.setEdge(D, aId, cId, {
+    //         label: "line interpolation different",
+    //         // curve: d3.curveBasis
+    //     });
+    //     console.log(`D.edges=${mapToJson(D.edges)}`);
+    //     // dg.removeNode(D, aId);
+    //     console.log(`D.nodes=${mapToJson(D.nodes)}`);
+    //     // console.log(dataGraph.getNodeIdByLabel('b'));
+    // });
+    let svgGroup2 = d3.select("svg g");
+    // Create the renderer
+    const renderer = new dagreD3.render();
 
-  // TODO This should be based on viewGraph
-  let renderGraph = convertDataGraphToDagre(dataGraph);
+    // TODO This should be based on viewGraph
+    let renderGraph = convertDataGraphToDagre(D);
 
-  // Set up an SVG group so that we can translate the final graph.
-  let svgCanvas;
-  let svgGroup;
+    // Set up an SVG group so that we can translate the final graph.
+    let svgCanvas;
+    let svgGroup;
 
-  /* After a click anywhere on screen, if the click is inside the svg but not on a node,
-  then clear the source node. */
-  https://stackoverflow.com/questions/36695438/detect-click-outside-div-using-javascript
-  window.addEventListener('click', genericClickListener);
+    /* After a click anywhere on screen, if the click is inside the svg but not on a node,
+then clear the source node. */
+    https://stackoverflow.com/questions/36695438/detect-click-outside-div-using-javascript
+    window.addEventListener('click', genericClickListener);
 
-  // Render the dataGraph into an svg
-  createEffect(() => {
-    let _ = numEdits();
-    console.log('reduce');
-    // TODO Race condition with source node? Or removed now that I have the graph produce the signal?
-    batch(() => {
-      performTransitiveReduction(dataGraph);
-    })
-    console.log('view');
-    updateViewGraph(viewGraph, dataGraph);
-    console.log('convert');
-    renderGraph = convertDataGraphToDagre(viewGraph);
-    console.log('render');
-    renderer(d3.select(svgGroup), renderGraph);
+    /* Reactive functions? */
+    const addTodo = (e) => {
+        e.preventDefault();
+        batch(() => {
+            dg.addNode(D, newTitle());
+            setTitle("");
+        });
+    };
 
-    // Add event listeners
-    /*
-    TODO Check out
-    https://d3js.org/d3-selection/selecting#selectAll
-    https://d3js.org/d3-selection/events#selection_on
-    https://developer.mozilla.org/en-US/docs/Web/API/Event
-    // When creating the listener we can use either this or nodes[i] to refer to the node that triggered the event.
-    I like this website and its format
-    https://using-d3js.com/08_01_events.html
-    https://using-d3js.com/08_01_events.html#h_42s6Es9avm this has a way of setting graph text,
-    probably better for source node.
-    */
-    d3.selectAll('svg g.node')
-      .on('click', nodeClickListener);
-  })
+    const history = createUndoHistory(() => {
+        // track the changes to the state (and clone if you need to)
+        const v = numEdits();
+        const json = graphToJson(D);
+        console.log('Saving jsonGraph to in history');
 
-  createEffect(() => {
-    let _unusedSource = sourceNode();
-    let _unusedEdits = numEdits();
-    console.log('update node list');
-    setTodos(reflectList());
-  });
-
-  const addTodo = (e) => {
-    e.preventDefault();
-    batch(() => {
-      dataGraph.addNode(newTitle());
-      setTitle("");
-    });
-  };
-
-  // Save graph to local storage on edit.
-  createEffect(() => {
-    let _ = numEdits();
-    const jsonGraph = graphToJson(dataGraph);
-    localStorage.setItem('dataGraph', jsonGraph);
-  });
-
-  onMount(() => {
-    console.log('mount');
-    /* Event Listeners */
-    // Listen for the delete key to remove nodes.
-    window.addEventListener('keyup', function (e) {
-      const key = e.key;
-      if (key === "Delete") {
-        if (sourceNode() !== undefined) {
-          batch(() => {
-            dataGraph.removeNodeAndContract(sourceNode());
-            setSourceNode(undefined);
-          });
-        }
-      }
+        // return a callback to set the state back to the tracked value
+        return () => {
+            console.log('Loading jsonGraph from history');
+            const jsonGraph = jsonToGraph(json);
+            // TODO Save this name in appState
+            updateDataGraphFromJsonGraph(dataGraph, jsonGraph);
+            setNumEdits(v);
+        };
     });
 
-    initZoom(zoom);
-    resetZoom(svgCanvas, svgGroup, zoom);
-    // TODO Set up this zoomIdentity stuff.
-    // d3.select('svg g').transition().duration(750).call(zoom.transform, d3.zoomIdentity);
-  });
+    /* Effects */
+    // Main render loop
+    createEffect(() => {
+        console.log('render loop')
+        let _ = numEdits();
+        console.log('reduce');
+        // TODO Race condition with source node? Or removed now that I have the graph produce the signal?
+        batch(() => {
+            performTransitiveReduction(D);
+        })
+        console.log('view');
+        copyDataGraphToViewGraph(D, V);
+        console.log('convert');
+        renderGraph = convertDataGraphToDagre(V);
+        console.log('render');
+        renderer(d3.select(svgGroup), renderGraph);
+        // Add event listeners
+        /*
+        TODO Check out
+        https://d3js.org/d3-selection/selecting#selectAll
+        https://d3js.org/d3-selection/events#selection_on
+        https://developer.mozilla.org/en-US/docs/Web/API/Event
+        // When creating the listener we can use either this or nodes[i] to refer to the node that triggered the event.
+        I like this website and its format
+        https://using-d3js.com/08_01_events.html
+        https://using-d3js.com/08_01_events.html#h_42s6Es9avm this has a way of setting graph text,
+        probably better for source node.
+        */
+        d3.selectAll('svg g.node')
+            .on('click', nodeClickListener);
+    });
 
-  return (
-    <>
-      <h3>TODO Dag</h3>
-      <button onClick={() => saveFile(dataGraph)}>Save File</button>
-      <input type="file" name="" id='inputFile' onChange={(e) => {
-        // TODO Not sure about this option chaining.
-        let fileObj = e?.target?.files[0];
-        // Works even if there's no extension.
-        let filenameWithoutExtension = fileObj.name.replace(/\.[^/.]+$/, "");
-        setGraphName(filenameWithoutExtension);
-        loadFile(fileObj);
+    createEffect(() => {
+        let _unusedSource = sourceNode();
+        let _unusedEdits = numEdits();
+        console.log('update node list');
+        setTodos(reflectList());
+    });
+
+    onMount(() => {
+        console.log('mount');
+        /* Event Listeners */
+        // Listen for the delete key to remove nodes.
+        window.addEventListener('keyup', function (e) {
+            const key = e.key;
+            if (key === "Delete") {
+                if (sourceNode() !== undefined) {
+                    batch(() => {
+                        dataGraph.removeNodeAndContract(sourceNode());
+                        setSourceNode(undefined);
+                    });
+                }
+            }
+        });
+
+        initZoom(zoom);
         resetZoom(svgCanvas, svgGroup, zoom);
-      }} hidden></input >
-      <button onClick={() => openFile()}>Load File</button>
-      <input
-        type="text"
-        value={graphName()}
-        onChange={(e) => setGraphName(e.currentTarget.value)}
-      />
-      <button onClick={() => copyGraphToClipboard(dataGraph)}>Copy to Clipboard</button>
-      <Show when={numEdits() > numEditsOnLastLoad()}>(unsaved)</Show>
-      <form onSubmit={addTodo}>
-        <input
-          placeholder="enter todo and click +"
-          required
-          value={newTitle()}
-          onInput={(e) => setTitle(e.currentTarget.value)}
-        />
-        <button>+</button>
-      </form>
-      <button disabled={!history.canUndo()} onClick={history.undo}>
-        Undo
-      </button>
-      <button disabled={!history.canRedo()} onClick={history.redo}>
-        Redo
-      </button>
-      <svg id="svg-canvas" ref={svgCanvas}>
-        <g id="svg-g" ref={svgGroup}></g>
-      </svg>
-      <Show when={sourceNode() !== undefined}>
-        Source Node: <input
-          type="text"
-          value={dataGraph.nodes.get(sourceNode()).label}
-          style={
-            { width: "40vw" }
-          }
-          onChange={(e) => dataGraph.setNodeLabel(sourceNode(), e.currentTarget.value)}
-        />
-      </Show>
-      <For each={todos()}>
-        {(todo, i) => (
-          <div>
+        // TODO Set up this zoomIdentity stuff.
+        // d3.select('svg g').transition().duration(750).call(zoom.transform, d3.zoomIdentity);
+    });
+
+    return (
+        <>
+            <h3>TODO Dag</h3>
+            <button onClick={() => saveFile(D)}>Save File</button>
+            <input type="file" name="" id='inputFile' onChange={(e) => {
+                // TODO Not sure about this option chaining.
+                let fileObj = e?.target?.files[0];
+                // Works even if there's no extension.
+                let filenameWithoutExtension = fileObj.name.replace(/\.[^/.]+$/, "");
+                setGraphName(filenameWithoutExtension);
+                loadFile(fileObj);
+                resetZoom(svgCanvas, svgGroup, zoom);
+            }} hidden></input >
+            <button onClick={() => openFile()}>Load File</button>
             <input
-              type="checkbox"
-              checked={dataGraph.nodes.get(todo).completed || false}
-              onChange={(e) => {
-                dataGraph.nodes.get(todo).completed = e.target.checked;
-                setNumEdits(numEdits() + 1);
-              }
-              }
+                type="text"
+                value={graphName()}
+                onChange={(e) => setGraphName(e.currentTarget.value)}
             />
+            <button onClick={() => copyGraphToClipboard(D)}>Copy to Clipboard</button>
+            <Show when={numEdits() > numEditsOnLastLoad()}>(unsaved)</Show>
+            <form onSubmit={addTodo}>
+                <input
+                    placeholder="enter todo and click +"
+                    required
+                    value={newTitle()}
+                    onInput={(e) => setTitle(e.currentTarget.value)}
+                />
+                <button>+</button>
+            </form>
+            {
+                // <button disabled={!history.canUndo()} onClick={history.undo}>
+                //     Undo
+                // </button>
+                // <button disabled={!history.canRedo()} onClick={history.redo}>
+                //     Redo
+                // </button>
+            }
+            Show Completed
             <input
-              type="text"
-              value={dataGraph.nodes.get(todo).label}
-              style={
-                { width: "40vw" }
-              }
-              onChange={(e) => dataGraph.setNodeLabel(todo, e.currentTarget.value)}
+                type="checkbox"
+                checked={showCompleted()}
+                onChange={(e) => {
+                    setShowCompleted(e.target.checked);
+                    // if (e.target.checked) {
+                    // We only need re-render the graph if we're showing completed nodes (the default) I think.
+                    // debugger;
+                    setNumEdits(numEdits() + 1);
+                    // debugger;
+                    // }
+                }
+                }
             />
-            <button onClick={() => { dataGraph.removeNodeAndContract(todo) }}>
-              x
-            </button>
-            <button onClick={() => { setSourceNode(todo) }}>
-              o
-            </button>
-            {/* Show unconnected nodes view */}
-            <Show
-              when={sourceNode() !== undefined}
-            >
-              <button onClick={() => { dataGraph.setEdge(sourceNode(), todo) }}>
-                {">"}
-              </button>
-              <button onClick={() => { dataGraph.setEdge(todo, sourceNode()) }}>
-                {"<"}
-              </button>
+            <svg id="svg-canvas" ref={svgCanvas}>
+                <g id="svg-g" ref={svgGroup}></g>
+            </svg>
+            <Show when={sourceNode() !== undefined}>
+                Source Node: <input
+                    type="text"
+                    value={D.nodes.get(sourceNode()).label}
+                    style={
+                        { width: "40vw" }
+                    }
+                    onChange={(e) => dg.setNodeLabel(D, sourceNode(), e.currentTarget.value)}
+                />
             </Show>
-          </div>
-        )}
-      </For>
-    </>
-  );
+            <For each={todos()}>
+                {(todo, i) => (
+                    <div>
+                        <input
+                            type="checkbox"
+                            checked={D.nodes.get(todo).completed || false}
+                            onChange={(e) => {
+                                D.nodes.get(todo).completed = e.target.checked;
+                                setNumEdits(numEdits() + 1);
+                            }
+                            }
+                        />
+                        <input
+                            type="text"
+                            value={D.nodes.get(todo).label}
+                            style={
+                                { width: "40vw" }
+                            }
+                            onChange={(e) => dg.setNodeLabel(D, todo, e.currentTarget.value)}
+                        />
+                        <button onClick={() => { dg.removeNodeAndContract(D, todo) }}>
+                            x
+                        </button>
+                        <button onClick={() => { setSourceNode(todo) }}>
+                            o
+                        </button>
+                        {/* Show unconnected nodes view */}
+                        <Show
+                            when={sourceNode() !== undefined}
+                        >
+                            <button onClick={() => { dg.setEdge(D, sourceNode(), todo) }}>
+                                {">"}
+                            </button>
+                            <button onClick={() => { dg.setEdge(D, todo, sourceNode()) }}>
+                                {"<"}
+                            </button>
+                        </Show>
+                    </div>
+                )}
+            </For>
+        </>
+    );
 };
 
 export default App;
