@@ -124,7 +124,8 @@ export function addNode(G, label, attrDict) {
         G.nodes.set(id, { label: label });
     }
     G.graph.set(id, new Set());
-    G.setNumEdits(G.numEdits() + 1);
+    console.debug(`addNode setting G.numDataEdits=${G.numDataEdits() + 1}`);
+    G.setNumDataEdits(G.numDataEdits() + 1);
     return id;
 }
 
@@ -133,7 +134,8 @@ export function setNodeLabel(G, nodeId, newNodeLabel) {
         throw new Error(`Setting node label for id=${nodeId}, but node does not exist`);
     }
     G.nodes.get(nodeId).label = newNodeLabel;
-    G.setNumEdits(G.numEdits() + 1);
+    console.debug(`addNode setting G.numDataEdits=${G.numDataEdits() + 1}`);
+    G.setNumDataEdits(G.numDataEdits() + 1);
 }
 
 export function removeNode(G, id) {
@@ -153,7 +155,8 @@ export function removeNode(G, id) {
     for (let [_, children] of G.graph.entries()) {
         children.delete(id);
     }
-    G.setNumEdits(G.numEdits() + 1);
+    console.debug(`addNode setting G.numDataEdits=${G.numDataEdits() + 1}`);
+    G.setNumDataEdits(G.numDataEdits() + 1);
 }
 
 export function removeNodeAndContract(G, id) {
@@ -184,7 +187,8 @@ export function setEdge(G, source, target, attrDict) {
     } else {
         G.edges.set(edgeKey, {});
     }
-    G.setNumEdits(G.numEdits() + 1);
+    console.debug(`addNode setting G.numDataEdits=${G.numDataEdits() + 1}`);
+    G.setNumDataEdits(G.numDataEdits() + 1);
 }
 
 export function removeEdge(G, source, target) {
@@ -199,6 +203,7 @@ export function removeEdge(G, source, target) {
     }
     G.graph.get(source).delete(target);
     G.edges.delete(`${source},${target}`);
-    G.setNumEdits(G.numEdits() + 1);
+    console.debug(`addNode setting G.numDataEdits=${G.numDataEdits() + 1}`);
+    G.setNumDataEdits(G.numDataEdits() + 1);
 }
 /* End setters */

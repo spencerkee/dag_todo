@@ -1,7 +1,6 @@
-import { createUndoHistory } from "@solid-primitives/history";
 import * as d3 from "d3";
 import dagreD3 from "dagre-d3/dist/dagre-d3";
-import { batch, createEffect, createSignal, onMount } from "solid-js";
+import { batch, createEffect, createSignal, onMount, untrack } from "solid-js";
 import * as dg from "./dg.js";
 import "./index.css";
 
@@ -65,7 +64,7 @@ function saveFile(state) {
     // a.download = `todoGraph-${now.toISOString().split('.')[0]}.json`
     a.click();
     // TODO How do we tell if the download was successful or not? We may not want to set the numEditsOnLastLoad in that case.
-    setNumEditsOnLastLoad(numEdits());
+    setNumEditsOnLastLoad(numDataEdits());
 }
 
 function openFile() {
@@ -88,8 +87,9 @@ function loadFile(fileBlob) {
         updateDataGraphFromJsonGraph(D, jsonGraph);
         batch(() => {
             setSourceNode(undefined);
-            setNumEdits(numEdits() + 1);
-            setNumEditsOnLastLoad(numEdits());
+            console.debug(`loadFile setting numDataEdits=${numDataEdits() + 1}`);
+            setNumDataEdits(numDataEdits() + 1);
+            setNumDataEditsOnLastLoad(numDataEdits());
         });
     }
 
@@ -300,20 +300,15 @@ function nodeClickListener(event) {
 function reflectList() {
     if (sourceNode() === undefined) {
         console.log('reflectList sourceNode is undefined');
-        console.log(`reflectList sources: ${dg.sources(D)}`);
-        return dg.sources(D);
+        console.log(`reflectList sources: ${dg.sources(V)}`);
+        return dg.sources(V);
     }
     console.log(`reflectList sourceNode is ${sourceNode()}`);
-    let unconnectedNodes = dg.getUnconnectedNodes(D, sourceNode());
-    let orderedUnconnectedNodes = dg.topologicalSort(D).filter(n => unconnectedNodes.has(n));
+    let unconnectedNodes = dg.getUnconnectedNodes(V, sourceNode());
+    let orderedUnconnectedNodes = dg.topologicalSort(V).filter(n => unconnectedNodes.has(n));
     console.log(`reflectList orderedUnconnectedNodes: ${orderedUnconnectedNodes}`);
     return orderedUnconnectedNodes;
 }
-
-/* Reactive functions? */
-// function up() {
-//     setNumEdits(numEdits() + 1);
-// }
 
 // https://www.d3indepth.com/zoom-and-pan/
 const zoom = d3.zoom()
@@ -323,20 +318,21 @@ const zoom = d3.zoom()
     .on('zoom', handleZoom);
 
 /* Global signals. TODO should probably use context in the future. */
-const [numEdits, setNumEdits] = createSignal(0);
+const [numDataEdits, setNumDataEdits] = createSignal(0);
+const [numViewEdits, setNumViewEdits] = createSignal(0);
 const [newTitle, setTitle] = createSignal("");
 // TODO This probably doesn't need to be a signal.
 const [graphName, setGraphName] = createSignal("myGraph.json");
 const [sourceNode, setSourceNode] = createSignal(undefined);
 const [todos, setTodos] = createSignal([]);
-const [numEditsOnLastLoad, setNumEditsOnLastLoad] = createSignal(0);
+const [numDataEditsOnLastLoad, setNumDataEditsOnLastLoad] = createSignal(0);
 const [showCompleted, setShowCompleted] = createSignal(true);
 const D = {
     nodes: new Map(),
     edges: new Map(),
     graph: new Map(),
-    numEdits: numEdits,
-    setNumEdits: setNumEdits,
+    numDataEdits: numDataEdits,
+    setNumDataEdits: setNumDataEdits,
 }
 // TODO Do I need to trigger a render here?
 updateGraphFromLocalStorage(D);
@@ -399,34 +395,42 @@ then clear the source node. */
         });
     };
 
-    const history = createUndoHistory(() => {
-        // track the changes to the state (and clone if you need to)
-        const v = numEdits();
-        const json = graphToJson(D);
-        console.log('Saving jsonGraph to in history');
+    // const history = createUndoHistory(() => {
+    //     // track the changes to the state (and clone if you need to)
+    //     const v = numDataEdits();
+    //     const json = graphToJson(D);
+    //     console.log('Saving jsonGraph to in history');
 
-        // return a callback to set the state back to the tracked value
-        return () => {
-            console.log('Loading jsonGraph from history');
-            const jsonGraph = jsonToGraph(json);
-            // TODO Save this name in appState
-            updateDataGraphFromJsonGraph(dataGraph, jsonGraph);
-            setNumEdits(v);
-        };
-    });
+    //     // return a callback to set the state back to the tracked value
+    //     return () => {
+    //         console.log('Loading jsonGraph from history');
+    //         const jsonGraph = jsonToGraph(json);
+    //         // TODO Save this name in appState
+    //         updateDataGraphFromJsonGraph(dataGraph, jsonGraph);
+    //         setNumDataEdits(v);
+    //     };
+    // });
 
     /* Effects */
+    // Construct view graph from data graph
+    createEffect(() => {
+        let _ = numDataEdits();
+        console.debug(`Construct view numDataEdits=${numDataEdits()}`);
+        console.log('reduce');
+        // TODO Race condition with source node? Or removed now that I have the graph produce the signal?
+        untrack(() => {
+            performTransitiveReduction(D);
+            copyDataGraphToViewGraph(D, V);
+            console.debug(`d to v conversion setting numViewEdits=${numViewEdits() + 1}`);
+            setNumViewEdits(numViewEdits() + 1);
+        });
+    });
+
     // Main render loop
     createEffect(() => {
         console.log('render loop')
-        let _ = numEdits();
-        console.log('reduce');
-        // TODO Race condition with source node? Or removed now that I have the graph produce the signal?
-        batch(() => {
-            performTransitiveReduction(D);
-        })
-        console.log('view');
-        copyDataGraphToViewGraph(D, V);
+        let _ = numViewEdits();
+        console.debug(`Render view numViewEdits=${numViewEdits()}`);
         console.log('convert');
         renderGraph = convertDataGraphToDagre(V);
         console.log('render');
@@ -447,9 +451,10 @@ then clear the source node. */
             .on('click', nodeClickListener);
     });
 
+    // Reflect the list of nodes.
     createEffect(() => {
         let _unusedSource = sourceNode();
-        let _unusedEdits = numEdits();
+        let _unusedEdits = numViewEdits();
         console.log('update node list');
         setTodos(reflectList());
     });
@@ -496,7 +501,7 @@ then clear the source node. */
                 onChange={(e) => setGraphName(e.currentTarget.value)}
             />
             <button onClick={() => copyGraphToClipboard(D)}>Copy to Clipboard</button>
-            <Show when={numEdits() > numEditsOnLastLoad()}>(unsaved)</Show>
+            <Show when={numDataEdits() > numDataEditsOnLastLoad()}>(unsaved)</Show>
             <form onSubmit={addTodo}>
                 <input
                     placeholder="enter todo and click +"
@@ -523,7 +528,8 @@ then clear the source node. */
                     // if (e.target.checked) {
                     // We only need re-render the graph if we're showing completed nodes (the default) I think.
                     // debugger;
-                    setNumEdits(numEdits() + 1);
+                    console.debug(`showCompleted checkbox setting numViewEdits=${numViewEdits() + 1}`);
+                    setNumViewEdits(numViewEdits() + 1);
                     // debugger;
                     // }
                 }
@@ -550,7 +556,8 @@ then clear the source node. */
                             checked={D.nodes.get(todo).completed || false}
                             onChange={(e) => {
                                 D.nodes.get(todo).completed = e.target.checked;
-                                setNumEdits(numEdits() + 1);
+                                console.debug(`checkbox setting numDataEdits=${numDataEdits() + 1}`);
+                                setNumDataEdits(numDataEdits() + 1);
                             }
                             }
                         />

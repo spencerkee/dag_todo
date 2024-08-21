@@ -35,6 +35,9 @@ You can deploy the `dist` folder to any static host provider (netlify, surge, no
 
 # TODO
 
+### 2024-08-21
+Now that I have a view graph and a data graph, the weird thing is that the view graph needs to track changes to the datagraph, and then everyone else should track changes to the view graph. Just have a second signal? Seems easiest.
+
 ### 2024-08-12
 Okay I want to not show completed nodes. How do I do that?
 - Create a helper function which I wrap every .nodes/.graph/.edges call with. This helper function takes in showCompleted() signal and constructs a graph on the fly where I delete all of the completed nodes and they get contracted.
