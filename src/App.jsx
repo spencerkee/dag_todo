@@ -64,7 +64,7 @@ function saveFile(state) {
     // a.download = `todoGraph-${now.toISOString().split('.')[0]}.json`
     a.click();
     // TODO How do we tell if the download was successful or not? We may not want to set the numEditsOnLastLoad in that case.
-    setNumEditsOnLastLoad(numDataEdits());
+    setNumDataEditsOnLastLoad(numDataEdits());
 }
 
 function openFile() {
@@ -464,7 +464,7 @@ then clear the source node. */
             if (key === "Delete") {
                 if (sourceNode() !== undefined) {
                     batch(() => {
-                        dataGraph.removeNodeAndContract(sourceNode());
+                        dg.removeNodeAndContract(D, sourceNode());
                         setSourceNode(undefined);
                     });
                 }
