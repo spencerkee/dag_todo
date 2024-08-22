@@ -600,7 +600,22 @@ then clear the source node. */
                 <g id="svg-g" ref={svgGroup}></g>
             </svg>
             <Show when={sourceNode() !== undefined}>
-                Source Node: <input
+                {"Source Node: "}
+                <input
+                    type="checkbox"
+                    checked={D.nodes.get(sourceNode()).completed || false}
+                    onChange={(e) => {
+                        dg.setNode(D, sourceNode(), {
+                            ...D.nodes.get(sourceNode()),
+                            completed: e.target.checked
+                        });
+                        if (!showCompleted() && e.target.checked) {
+                            setSourceNode(undefined);
+                        }
+                    }
+                    }
+                />
+                <input
                     type="text"
                     value={D.nodes.get(sourceNode()).label}
                     style={
