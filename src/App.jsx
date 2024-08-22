@@ -114,12 +114,47 @@ function fetchViewGraph(dataGraph, viewGraph, showCompleted) {
         }
         performTransitiveReduction(viewGraph);
     }
+    fetchLongestPath(viewGraph);
 }
 
 function newGraph() {
     return new dagreD3.graphlib.Graph()
         .setGraph({ rankdir: "LR" })
         .setDefaultEdgeLabel(function () { return {}; });
+}
+
+function fetchLongestPath(G) {
+    let lengthTo = new Map();
+    let currentMax = 0;
+    let currentMaxNode = undefined;
+    for (const [nodeId, _] of G.nodes) {
+        lengthTo.set(nodeId, {
+            len: 0,
+            pred: undefined,
+        });
+    }
+    let topOrder = dg.topologicalSort(G);
+    for (const v of topOrder) {
+        for (const w of G.graph.get(v)) {
+            if (lengthTo.get(w).len <= lengthTo.get(v).len + 1) {
+                lengthTo.set(w, {
+                    len: lengthTo.get(v).len + 1,
+                    pred: v,
+                });
+                if (lengthTo.get(w).len > currentMax) {
+                    currentMax = lengthTo.get(w).len;
+                    currentMaxNode = w;
+                }
+            }
+        }
+    }
+    let path = [];
+    let current = currentMaxNode;
+    while (current !== undefined) {
+        path.push(current);
+        current = lengthTo.get(current).pred;
+    }
+    return path.reverse();
 }
 
 function performTransitiveReduction(dataGraph) {
