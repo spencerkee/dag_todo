@@ -1,3 +1,4 @@
+import { createUndoHistory } from "@solid-primitives/history";
 import * as d3 from "d3";
 import dagreD3 from "dagre-d3/dist/dagre-d3";
 import { batch, createEffect, createSignal, onMount, untrack } from "solid-js";
@@ -429,21 +430,27 @@ const App = () => {
         });
     };
 
-    // const history = createUndoHistory(() => {
-    //     // track the changes to the state (and clone if you need to)
-    //     const v = numDataEdits();
-    //     const json = graphToJson(D);
-    //     console.log('Saving jsonGraph to in history');
+    const history = createUndoHistory(() => {
+        // track the changes to the state (and clone if you need to)
+        const v = numDataEdits();
+        console.log('Saving jsonGraph to in history');
+        console.debug(`saving numDataEdits=${numDataEdits()}`);
+        const json = graphToJson(D);
 
-    //     // return a callback to set the state back to the tracked value
-    //     return () => {
-    //         console.log('Loading jsonGraph from history');
-    //         const jsonGraph = jsonToGraph(json);
-    //         // TODO Save this name in appState
-    //         updateGraphAFromGraphB(dataGraph, jsonGraph);
-    //         setNumDataEdits(v);
-    //     };
-    // });
+        // return a callback to set the state back to the tracked value
+        return () => {
+            console.log('Loading jsonGraph from history');
+            console.debug(`loading numDataEdits=${numDataEdits()}`);
+            const jsonGraph = jsonToGraph(json);
+            // TODO Save this name in appState
+            updateGraphAFromGraphB(D, jsonGraph);
+            untrack(() => {
+                setNumDataEdits(numDataEdits() + 1);
+                // TODO?
+                // setNumDataEditsOnLastLoad(numDataEdits());
+            });
+        };
+    });
 
     /* Event listeners */
     /* After a click anywhere on screen, if the click is inside the svg but not on a node,
@@ -556,14 +563,12 @@ then clear the source node. */
                 />
                 <button>+</button>
             </form>
-            {
-                // <button disabled={!history.canUndo()} onClick={history.undo}>
-                //     Undo
-                // </button>
-                // <button disabled={!history.canRedo()} onClick={history.redo}>
-                //     Redo
-                // </button>
-            }
+            <button disabled={!history.canUndo()} onClick={history.undo}>
+                Undo
+            </button>
+            <button disabled={!history.canRedo()} onClick={history.redo}>
+                Redo
+            </button>
             Show Completed
             <input
                 type="checkbox"
