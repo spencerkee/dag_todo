@@ -71,10 +71,16 @@ function openFile() {
     document.getElementById('inputFile').click();
 }
 
-function updateDataGraphFromJsonGraph(dataGraph, jsonGraph) {
+function updateGraphAFromGraphB(dataGraph, jsonGraph) {
     dataGraph.nodes = jsonGraph.nodes;
     dataGraph.edges = jsonGraph.edges;
     dataGraph.graph = jsonGraph.graph;
+}
+
+function cloneGraphAToGraphB(dataGraph, jsonGraph) {
+    dataGraph.nodes = structuredClone(jsonGraph.nodes);
+    dataGraph.edges = structuredClone(jsonGraph.edges);
+    dataGraph.graph = structuredClone(jsonGraph.graph);
 }
 
 function loadFile(fileBlob) {
@@ -84,7 +90,7 @@ function loadFile(fileBlob) {
 
     reader.onload = function () {
         const jsonGraph = jsonToGraph(reader.result);
-        updateDataGraphFromJsonGraph(D, jsonGraph);
+        updateGraphAFromGraphB(D, jsonGraph);
         batch(() => {
             setSourceNode(undefined);
             console.debug(`loadFile setting numDataEdits=${numDataEdits() + 1}`);
@@ -98,21 +104,15 @@ function loadFile(fileBlob) {
     };
 }
 
-function copyDataGraphToViewGraph(dataGraph, viewGraph) {
-    // TODO Structured clone?
-    viewGraph.nodes.clear();
-    for (let [nodeId, node] of dataGraph.nodes) {
-        viewGraph.nodes.set(nodeId, node);
-    }
-
-    viewGraph.edges.clear();
-    for (let [edgeKey, edge] of dataGraph.edges) {
-        viewGraph.edges.set(edgeKey, edge);
-    }
-
-    viewGraph.graph.clear();
-    for (let [nodeId, children] of dataGraph.graph) {
-        viewGraph.graph.set(nodeId, children);
+function fetchViewGraph(dataGraph, viewGraph, showCompleted) {
+    cloneGraphAToGraphB(viewGraph, dataGraph);
+    if (!showCompleted) {
+        for (let [nodeId, nodeAttrs] of viewGraph.nodes) {
+            if (nodeAttrs.completed) {
+                dg.removeNode(viewGraph, nodeId);
+            }
+        }
+        performTransitiveReduction(viewGraph);
     }
 }
 
@@ -142,7 +142,7 @@ function performTransitiveReduction(dataGraph) {
 function convertDataGraphToDagre(dataGraph) {
     let g = newGraph();
 
-    // Clone attrs here becaues otherwise when we render the renderGraph it will add attributes to the dataGraph.
+    // Clone attrs here because otherwise when we render the renderGraph it will add attributes to the dataGraph.
     for (const [id, nodeAttrs] of dataGraph.nodes.entries()) {
         const d3NodeAttrs = {
             label: nodeAttrs.label,
@@ -172,7 +172,7 @@ function updateGraphFromLocalStorage(G) {
         console.log('Loading jsonGraph from localStorage');
         // TODO Save this name in appState
         setGraphName("");
-        updateDataGraphFromJsonGraph(G, jsonGraph);
+        updateGraphAFromGraphB(G, jsonGraph);
     } else {
         console.log('jsonGraph in localStorage is null');
     }
@@ -300,13 +300,11 @@ function nodeClickListener(event) {
 function reflectList() {
     if (sourceNode() === undefined) {
         console.log('reflectList sourceNode is undefined');
-        console.log(`reflectList sources: ${dg.sources(V)}`);
         return dg.sources(V);
     }
     console.log(`reflectList sourceNode is ${sourceNode()}`);
     let unconnectedNodes = dg.getUnconnectedNodes(V, sourceNode());
     let orderedUnconnectedNodes = dg.topologicalSort(V).filter(n => unconnectedNodes.has(n));
-    console.log(`reflectList orderedUnconnectedNodes: ${orderedUnconnectedNodes}`);
     return orderedUnconnectedNodes;
 }
 
@@ -406,7 +404,7 @@ then clear the source node. */
     //         console.log('Loading jsonGraph from history');
     //         const jsonGraph = jsonToGraph(json);
     //         // TODO Save this name in appState
-    //         updateDataGraphFromJsonGraph(dataGraph, jsonGraph);
+    //         updateGraphAFromGraphB(dataGraph, jsonGraph);
     //         setNumDataEdits(v);
     //     };
     // });
@@ -415,12 +413,12 @@ then clear the source node. */
     // Construct view graph from data graph
     createEffect(() => {
         let _ = numDataEdits();
+        let shouldShowCompleted = showCompleted();
         console.debug(`Construct view numDataEdits=${numDataEdits()}`);
-        console.log('reduce');
         // TODO Race condition with source node? Or removed now that I have the graph produce the signal?
         untrack(() => {
             performTransitiveReduction(D);
-            copyDataGraphToViewGraph(D, V);
+            fetchViewGraph(D, V, shouldShowCompleted);
             console.debug(`d to v conversion setting numViewEdits=${numViewEdits() + 1}`);
             setNumViewEdits(numViewEdits() + 1);
         });
@@ -431,9 +429,7 @@ then clear the source node. */
         console.log('render loop')
         let _ = numViewEdits();
         console.debug(`Render view numViewEdits=${numViewEdits()}`);
-        console.log('convert');
         renderGraph = convertDataGraphToDagre(V);
-        console.log('render');
         renderer(d3.select(svgGroup), renderGraph);
         // Add event listeners
         /*
@@ -524,13 +520,12 @@ then clear the source node. */
                 type="checkbox"
                 checked={showCompleted()}
                 onChange={(e) => {
+                    console.log(`showCompleted=${showCompleted()} changing to ${e.target.checked}`);
                     setShowCompleted(e.target.checked);
                     // if (e.target.checked) {
                     // We only need re-render the graph if we're showing completed nodes (the default) I think.
-                    // debugger;
-                    console.debug(`showCompleted checkbox setting numViewEdits=${numViewEdits() + 1}`);
-                    setNumViewEdits(numViewEdits() + 1);
-                    // debugger;
+                    // console.debug(`showCompleted checkbox setting numViewEdits=${numViewEdits() + 1}`);
+                    // setNumViewEdits(numViewEdits() + 1);
                     // }
                 }
                 }
