@@ -504,6 +504,13 @@ then clear the source node. */
         setTodos(reflectList(V));
     });
 
+    // Save graph to local storage on edit.
+    createEffect(() => {
+        let _ = numDataEdits();
+        const jsonGraph = graphToJson(D);
+        localStorage.setItem('dataGraph', jsonGraph);
+    });
+
     onMount(() => {
         console.log('mount');
         /* Event Listeners */
