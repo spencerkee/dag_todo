@@ -362,8 +362,8 @@ const [graphName, setGraphName] = createSignal("myGraph.json");
 const [sourceNode, setSourceNode] = createSignal(undefined);
 const [todos, setTodos] = createSignal([]);
 const [numDataEditsOnLastLoad, setNumDataEditsOnLastLoad] = createSignal(0);
-const [showCompleted, setShowCompleted] = createSignal(true);
-const [showSpine, setShowSpine] = createSignal(false);
+const [showCompleted, setShowCompleted] = createSignal(false);
+const [showSpine, setShowSpine] = createSignal(true);
 const D = {
     nodes: new Map(),
     edges: new Map(),
