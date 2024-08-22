@@ -3,6 +3,7 @@ import dagreD3 from "dagre-d3/dist/dagre-d3";
 import { batch, createEffect, createSignal, onMount, untrack } from "solid-js";
 import * as dg from "./dg.js";
 import "./index.css";
+import TodoList from "./todoList.jsx";
 
 function mapToJson(map) {
     const obj = {}
@@ -331,17 +332,15 @@ function nodeClickListener(event) {
     processNodeClick(nodeId, sourceNode, setSourceNode);
 }
 
-function reflectList(G) {
-    if (sourceNode() === undefined) {
-        console.log('reflectList sourceNode is undefined');
-        return dg.sources(G);
-    }
-    console.log(`reflectList sourceNode is ${sourceNode()}`);
-    if (showSpine()) {
-        console.log('reflectList showing spine');
-        return fetchLongestPath(G);
-    }
-    let unconnectedNodes = dg.getUnconnectedNodes(G, sourceNode());
+function getSourcesList(G, numViewEdits) {
+    // Technically this line is not necessary since this was called with getSourcesList(V, numViewEdits()) but leaving it in for future reference.
+    let _ = numViewEdits;
+    return dg.sources(G);
+}
+
+function getUnconnectedNodesList(G, sourceNode, numViewEdits) {
+    let _ = numViewEdits;
+    let unconnectedNodes = dg.getUnconnectedNodes(G, sourceNode);
     let orderedUnconnectedNodes = dg.topologicalSort(G).filter(n => unconnectedNodes.has(n));
     return orderedUnconnectedNodes;
 }
@@ -363,7 +362,6 @@ const [sourceNode, setSourceNode] = createSignal(undefined);
 const [todos, setTodos] = createSignal([]);
 const [numDataEditsOnLastLoad, setNumDataEditsOnLastLoad] = createSignal(0);
 const [showCompleted, setShowCompleted] = createSignal(false);
-const [showSpine, setShowSpine] = createSignal(true);
 const D = {
     nodes: new Map(),
     edges: new Map(),
@@ -495,15 +493,6 @@ then clear the source node. */
             .on('click', nodeClickListener);
     });
 
-    // Reflect the list of nodes.
-    createEffect(() => {
-        let _unusedSource = sourceNode();
-        let _unusedEdits = numViewEdits();
-        let _unusedShowSpine = showSpine();
-        console.log('update node list');
-        setTodos(reflectList(V));
-    });
-
     // Save graph to local storage on edit.
     createEffect(() => {
         let _ = numDataEdits();
@@ -581,16 +570,6 @@ then clear the source node. */
                 }
                 }
             />
-            Show Spine
-            <input
-                type="checkbox"
-                checked={showSpine()}
-                onChange={(e) => {
-                    console.log(`showSpine=${showSpine()} changing to ${e.target.checked}`);
-                    setShowSpine(e.target.checked);
-                }
-                }
-            />
             <svg id="svg-canvas" ref={svgCanvas}>
                 <g id="svg-g" ref={svgGroup}></g>
             </svg>
@@ -604,47 +583,49 @@ then clear the source node. */
                     onChange={(e) => dg.setNodeLabel(D, sourceNode(), e.currentTarget.value)}
                 />
             </Show>
-            <For each={todos()}>
-                {(todo, i) => (
-                    <div>
-                        <input
-                            type="checkbox"
-                            checked={D.nodes.get(todo).completed || false}
-                            onChange={(e) => {
-                                D.nodes.get(todo).completed = e.target.checked;
-                                console.debug(`checkbox setting numDataEdits=${numDataEdits() + 1}`);
-                                setNumDataEdits(numDataEdits() + 1);
-                            }
-                            }
-                        />
-                        <input
-                            type="text"
-                            value={D.nodes.get(todo).label}
-                            style={
-                                { width: "40vw" }
-                            }
-                            onChange={(e) => dg.setNodeLabel(D, todo, e.currentTarget.value)}
-                        />
-                        <button onClick={() => { dg.removeNodeAndContract(D, todo) }}>
-                            x
-                        </button>
-                        <button onClick={() => { setSourceNode(todo) }}>
-                            o
-                        </button>
-                        {/* Show unconnected nodes view */}
-                        <Show
-                            when={sourceNode() !== undefined}
-                        >
-                            <button onClick={() => { dg.setEdge(D, sourceNode(), todo) }}>
-                                {">"}
-                            </button>
-                            <button onClick={() => { dg.setEdge(D, todo, sourceNode()) }}>
-                                {"<"}
-                            </button>
-                        </Show>
-                    </div>
-                )}
-            </For>
+            <div class="box">
+                {/*
+                https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_flexible_box_layout/Basic_concepts_of_flexbox#shorthand_values_for_the_flex_properties
+                https://github.com/solidjs/solid/discussions/749
+                https://stackoverflow.com/questions/73890749/how-do-i-pass-a-signal-setter-as-a-prop-to-a-child-component
+                TODO: Group up these related objects to reduce some lines.
+                */}
+                <TodoList
+                    // Signals
+                    sourceNode={sourceNode()}
+                    setSourceNode={setSourceNode}
+                    numViewEdits={numViewEdits()}
+                    setNumDataEdits={setNumDataEdits}
+                    // Non-signals
+                    todoItems={getSourcesList(V, numViewEdits())}
+                    D={D}
+                    title="Sources"
+                />
+                <TodoList
+                    // Signals
+                    sourceNode={sourceNode()}
+                    setSourceNode={setSourceNode}
+                    numViewEdits={numViewEdits()}
+                    setNumDataEdits={setNumDataEdits}
+                    // Non-signals
+                    todoItems={fetchLongestPath(V, numViewEdits())}
+                    D={D}
+                    title="Spine"
+                />
+                <Show when={sourceNode() !== undefined}>
+                    <TodoList
+                        // Signals
+                        sourceNode={sourceNode()}
+                        setSourceNode={setSourceNode}
+                        numViewEdits={numViewEdits()}
+                        setNumDataEdits={setNumDataEdits}
+                        // Non-signals
+                        todoItems={getUnconnectedNodesList(V, sourceNode(), numViewEdits())}
+                        D={D}
+                        title="Unconnected"
+                    />
+                </Show>
+            </div>
         </>
     );
 };

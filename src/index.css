@@ -45,3 +45,17 @@ text {
 g.completed>rect {
   fill: #90EE90;
 }
+
+.box {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.todoListContaner {
+  flex-direction: column;
+  flex: 1 1 auto;
+}
+
+.todoList {
+  flex: 1 1 auto;
+}
