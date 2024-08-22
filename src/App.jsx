@@ -418,11 +418,6 @@ const App = () => {
     let svgCanvas;
     let svgGroup;
 
-    /* After a click anywhere on screen, if the click is inside the svg but not on a node,
-then clear the source node. */
-    https://stackoverflow.com/questions/36695438/detect-click-outside-div-using-javascript
-    window.addEventListener('click', genericClickListener);
-
     /* Reactive functions? */
     const addTodo = (e) => {
         e.preventDefault();
@@ -447,6 +442,20 @@ then clear the source node. */
     //         setNumDataEdits(v);
     //     };
     // });
+
+    /* Event listeners */
+    /* After a click anywhere on screen, if the click is inside the svg but not on a node,
+then clear the source node. */
+    https://stackoverflow.com/questions/36695438/detect-click-outside-div-using-javascript
+    window.addEventListener('click', genericClickListener);
+    // Ctrl + S to save
+    document.addEventListener('keydown', e => {
+        if (e.ctrlKey && e.key === 's') {
+            // Prevent the Save dialog to open
+            e.preventDefault();
+            saveFile(D);
+        }
+    });
 
     /* Effects */
     // Construct view graph from data graph
