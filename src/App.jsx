@@ -1,7 +1,7 @@
 import { createUndoHistory } from "@solid-primitives/history";
 import * as d3 from "d3";
 import dagreD3 from "dagre-d3/dist/dagre-d3";
-import { batch, createEffect, createSignal, onMount, untrack } from "solid-js";
+import { batch, createEffect, createMemo, createSignal, onMount, untrack } from "solid-js";
 import * as dg from "./dg.js";
 import "./index.css";
 import TodoList from "./todoList.jsx";
@@ -98,6 +98,7 @@ function loadFile(fileBlob) {
             console.debug(`loadFile setting numDataEdits=${numDataEdits() + 1}`);
             setNumDataEdits(numDataEdits() + 1);
             setNumDataEditsOnLastLoad(numDataEdits());
+            clearHistory();
         });
     }
 
@@ -367,6 +368,7 @@ const [sourceNode, setSourceNode] = createSignal(undefined);
 const [todos, setTodos] = createSignal([]);
 const [numDataEditsOnLastLoad, setNumDataEditsOnLastLoad] = createSignal(0);
 const [showCompleted, setShowCompleted] = createSignal(false);
+const [trackClearHistory, clearHistory] = createSignal(undefined, { equals: false });
 const D = {
     nodes: new Map(),
     edges: new Map(),
@@ -430,24 +432,29 @@ const App = () => {
         });
     };
 
-    const history = createUndoHistory(() => {
-        // track the changes to the state (and clone if you need to)
-        const v = numDataEdits();
-        console.debug(`Saving jsonGraph to history numDataEdits=${numDataEdits()}`);
-        const json = graphToJson(D);
+    const history = createMemo(() => {
+        // Track what should rerun the memo
+        console.debug('Clearing undo history');
+        trackClearHistory();
+        return createUndoHistory(() => {
+            // track the changes to the state (and clone if you need to)
+            const v = numDataEdits();
+            console.debug(`Saving jsonGraph to history numDataEdits=${numDataEdits()}`);
+            const json = graphToJson(D);
 
-        // return a callback to set the state back to the tracked value
-        return () => {
-            console.debug(`Loading jsonGraph from history numDataEdits=${numDataEdits()} v=${v}`);
-            const jsonGraph = jsonToGraph(json);
-            // TODO Save this name in appState
-            updateGraphAFromGraphB(D, jsonGraph);
-            untrack(() => {
-                setNumDataEdits(v);
-                // TODO?
-                // setNumDataEditsOnLastLoad(numDataEdits());
-            });
-        };
+            // return a callback to set the state back to the tracked value
+            return () => {
+                console.debug(`Loading jsonGraph from history numDataEdits=${numDataEdits()} v=${v}`);
+                const jsonGraph = jsonToGraph(json);
+                // TODO Save this name in appState
+                updateGraphAFromGraphB(D, jsonGraph);
+                untrack(() => {
+                    setNumDataEdits(v);
+                    // TODO?
+                    // setNumDataEditsOnLastLoad(numDataEdits());
+                });
+            };
+        });
     });
 
     /* Event listeners */
@@ -461,6 +468,18 @@ then clear the source node. */
             // Prevent the Save dialog to open
             e.preventDefault();
             saveFile(D);
+        }
+    });
+    // Ctrl + Z to undo
+    document.addEventListener('keydown', e => {
+        if (e.ctrlKey && e.key === 'z') {
+            history().undo();
+        }
+    });
+    // Ctrl + Y to redo
+    document.addEventListener('keydown', e => {
+        if (e.ctrlKey && e.key === 'y') {
+            history().redo();
         }
     });
 
@@ -561,10 +580,10 @@ then clear the source node. */
                 />
                 <button>+</button>
             </form>
-            <button disabled={!history.canUndo()} onClick={history.undo}>
+            <button disabled={!history().canUndo()} onClick={history().undo}>
                 Undo
             </button>
-            <button disabled={!history.canRedo()} onClick={history.redo}>
+            <button disabled={!history().canRedo()} onClick={history().redo}>
                 Redo
             </button>
             Show Completed
