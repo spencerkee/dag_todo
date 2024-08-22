@@ -114,7 +114,6 @@ function fetchViewGraph(dataGraph, viewGraph, showCompleted) {
         }
         performTransitiveReduction(viewGraph);
     }
-    fetchLongestPath(viewGraph);
 }
 
 function newGraph() {
@@ -332,14 +331,18 @@ function nodeClickListener(event) {
     processNodeClick(nodeId, sourceNode, setSourceNode);
 }
 
-function reflectList() {
+function reflectList(G) {
     if (sourceNode() === undefined) {
         console.log('reflectList sourceNode is undefined');
-        return dg.sources(V);
+        return dg.sources(G);
     }
     console.log(`reflectList sourceNode is ${sourceNode()}`);
-    let unconnectedNodes = dg.getUnconnectedNodes(V, sourceNode());
-    let orderedUnconnectedNodes = dg.topologicalSort(V).filter(n => unconnectedNodes.has(n));
+    if (showSpine()) {
+        console.log('reflectList showing spine');
+        return fetchLongestPath(G);
+    }
+    let unconnectedNodes = dg.getUnconnectedNodes(G, sourceNode());
+    let orderedUnconnectedNodes = dg.topologicalSort(G).filter(n => unconnectedNodes.has(n));
     return orderedUnconnectedNodes;
 }
 
@@ -360,6 +363,7 @@ const [sourceNode, setSourceNode] = createSignal(undefined);
 const [todos, setTodos] = createSignal([]);
 const [numDataEditsOnLastLoad, setNumDataEditsOnLastLoad] = createSignal(0);
 const [showCompleted, setShowCompleted] = createSignal(true);
+const [showSpine, setShowSpine] = createSignal(false);
 const D = {
     nodes: new Map(),
     edges: new Map(),
@@ -486,8 +490,9 @@ then clear the source node. */
     createEffect(() => {
         let _unusedSource = sourceNode();
         let _unusedEdits = numViewEdits();
+        let _unusedShowSpine = showSpine();
         console.log('update node list');
-        setTodos(reflectList());
+        setTodos(reflectList(V));
     });
 
     onMount(() => {
@@ -557,11 +562,16 @@ then clear the source node. */
                 onChange={(e) => {
                     console.log(`showCompleted=${showCompleted()} changing to ${e.target.checked}`);
                     setShowCompleted(e.target.checked);
-                    // if (e.target.checked) {
-                    // We only need re-render the graph if we're showing completed nodes (the default) I think.
-                    // console.debug(`showCompleted checkbox setting numViewEdits=${numViewEdits() + 1}`);
-                    // setNumViewEdits(numViewEdits() + 1);
-                    // }
+                }
+                }
+            />
+            Show Spine
+            <input
+                type="checkbox"
+                checked={showSpine()}
+                onChange={(e) => {
+                    console.log(`showSpine=${showSpine()} changing to ${e.target.checked}`);
+                    setShowSpine(e.target.checked);
                 }
                 }
             />
