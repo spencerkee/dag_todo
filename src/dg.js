@@ -54,6 +54,12 @@ function topologicalSortHelper(G, node, visited, stack) {
 
     stack.push(node);
 }
+
+export function isPathBetween(G, source, target) {
+    // TODO Inefficient. Should do BFS.
+    // TODO Check that both nodes are in the graph.
+    return getDescendents(G, source).includes(target);
+}
 /* End non-mutating helpers */
 
 /* Start getters */

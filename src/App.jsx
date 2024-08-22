@@ -332,10 +332,14 @@ function nodeClickListener(event) {
     processNodeClick(nodeId, sourceNode, setSourceNode);
 }
 
-function getSourcesList(G, numViewEdits) {
+function getSourcesList(G, sourceNode, numViewEdits) {
     // Technically this line is not necessary since this was called with getSourcesList(V, numViewEdits()) but leaving it in for future reference.
     let _ = numViewEdits;
-    return dg.sources(G);
+    let sources = dg.sources(G);
+    if (sourceNode !== undefined) {
+        sources = sources.filter(n => n !== sourceNode && !dg.isPathBetween(G, n, sourceNode));
+    }
+    return sources;
 }
 
 function getUnconnectedNodesList(G, sourceNode, numViewEdits) {
@@ -597,7 +601,7 @@ then clear the source node. */
                     numViewEdits={numViewEdits()}
                     setNumDataEdits={setNumDataEdits}
                     // Non-signals
-                    todoItems={getSourcesList(V, numViewEdits())}
+                    todoItems={getSourcesList(V, sourceNode(), numViewEdits())}
                     D={D}
                     title="Sources"
                 />
