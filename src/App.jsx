@@ -323,7 +323,7 @@ function processNodeClick(nodeId) {
 
     // Add edge
     console.log(`Adding edge from '${sourceNode()}' to '${nodeId}'`);
-    dg.setEdge(D, sourceNode(), nodeId);
+    dg.addEdge(D, sourceNode(), nodeId);
     // Don't do the below in case you want to set multiple children
     // setSourceNode(undefined);
 }
@@ -393,15 +393,15 @@ const App = () => {
     //     let dId = dg.addNode(D, "d");
     //     console.log(`D.nodes=${mapToJson(D.nodes)}`);
 
-    //     dg.setEdge(D, aId, bId, {
+    //     dg.addEdge(D, aId, bId, {
     //         style: "stroke: #f66; stroke-width: 3px; stroke-dasharray: 5, 5;",
     //         arrowheadStyle: "fill: #f66"
     //     });
-    //     dg.setEdge(D, bId, cId, {
+    //     dg.addEdge(D, bId, cId, {
     //         label: "B to C",
     //         labelStyle: "font-style: italic; text-decoration: underline;"
     //     });
-    //     dg.setEdge(D, aId, cId, {
+    //     dg.addEdge(D, aId, cId, {
     //         label: "line interpolation different",
     //         // curve: d3.curveBasis
     //     });
@@ -433,19 +433,17 @@ const App = () => {
     const history = createUndoHistory(() => {
         // track the changes to the state (and clone if you need to)
         const v = numDataEdits();
-        console.log('Saving jsonGraph to in history');
-        console.debug(`saving numDataEdits=${numDataEdits()}`);
+        console.debug(`Saving jsonGraph to history numDataEdits=${numDataEdits()}`);
         const json = graphToJson(D);
 
         // return a callback to set the state back to the tracked value
         return () => {
-            console.log('Loading jsonGraph from history');
-            console.debug(`loading numDataEdits=${numDataEdits()}`);
+            console.debug(`Loading jsonGraph from history numDataEdits=${numDataEdits()} v=${v}`);
             const jsonGraph = jsonToGraph(json);
             // TODO Save this name in appState
             updateGraphAFromGraphB(D, jsonGraph);
             untrack(() => {
-                setNumDataEdits(numDataEdits() + 1);
+                setNumDataEdits(v);
                 // TODO?
                 // setNumDataEditsOnLastLoad(numDataEdits());
             });
@@ -604,7 +602,6 @@ then clear the source node. */
                     sourceNode={sourceNode()}
                     setSourceNode={setSourceNode}
                     numViewEdits={numViewEdits()}
-                    setNumDataEdits={setNumDataEdits}
                     // Non-signals
                     todoItems={getSourcesList(V, sourceNode(), numViewEdits())}
                     D={D}
@@ -615,7 +612,6 @@ then clear the source node. */
                     sourceNode={sourceNode()}
                     setSourceNode={setSourceNode}
                     numViewEdits={numViewEdits()}
-                    setNumDataEdits={setNumDataEdits}
                     // Non-signals
                     todoItems={fetchLongestPath(V, numViewEdits())}
                     D={D}
@@ -627,7 +623,6 @@ then clear the source node. */
                         sourceNode={sourceNode()}
                         setSourceNode={setSourceNode}
                         numViewEdits={numViewEdits()}
-                        setNumDataEdits={setNumDataEdits}
                         // Non-signals
                         todoItems={getUnconnectedNodesList(V, sourceNode(), numViewEdits())}
                         D={D}

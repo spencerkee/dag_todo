@@ -1,15 +1,5 @@
 import * as dg from "./dg.js";
 export default function TodoList(props) {
-    // // Signals
-    // sourceNode={sourceNode()}
-    // setSourceNode={setSourceNode}
-    // numViewEdits={numViewEdits()}
-    // setNumDataEdits={setNumDataEdits}
-    // // Non-signals
-    // todoItems={getSourcesList(V)}
-    // D={D}
-    // let _ = props.sourceNode();
-    // debugger;
     return (
         <div class="todoListContainer">
             {props.title}
@@ -21,9 +11,10 @@ export default function TodoList(props) {
                                 type="checkbox"
                                 checked={props.D.nodes.get(todo).completed || false}
                                 onChange={(e) => {
-                                    props.D.nodes.get(todo).completed = e.target.checked;
-                                    console.debug(`checkbox setting numDataEdits=${props.numDataEdits() + 1}`);
-                                    setNumDataEdits(props.numDataEdits + 1);
+                                    dg.setNode(props.D, todo, {
+                                        ...props.D.nodes.get(todo),
+                                        completed: e.target.checked
+                                    });
                                 }
                                 }
                             />
@@ -45,10 +36,10 @@ export default function TodoList(props) {
                             <Show
                                 when={props.sourceNode !== undefined}
                             >
-                                <button onClick={() => { dg.setEdge(props.D, props.sourceNode, todo) }}>
+                                <button onClick={() => { dg.addEdge(props.D, props.sourceNode, todo) }}>
                                     {">"}
                                 </button>
-                                <button onClick={() => { dg.setEdge(props.D, todo, props.sourceNode) }}>
+                                <button onClick={() => { dg.addEdge(props.D, todo, props.sourceNode) }}>
                                     {"<"}
                                 </button>
                             </Show>

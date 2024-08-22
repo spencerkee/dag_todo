@@ -137,6 +137,20 @@ export function addNode(G, label, attrDict) {
     return id;
 }
 
+export function setNode(G, id, attrDict) {
+    if (!G.nodes.has(id)) {
+        throw new Error(`Setting node with id=${id}, but node does not exist`);
+    }
+    if (attrDict === undefined) {
+        throw new Error(`Setting node with id=${id}, but attrDict is undefined`);
+    }
+    G.nodes.set(id, attrDict);
+    if (G.hasOwnProperty('numDataEdits')) {
+        console.debug(`addNode setting G.numDataEdits=${G.numDataEdits() + 1}`);
+        G.setNumDataEdits(G.numDataEdits() + 1);
+    }
+}
+
 export function setNodeLabel(G, nodeId, newNodeLabel) {
     if (!G.nodes.has(nodeId)) {
         throw new Error(`Setting node label for id=${nodeId}, but node does not exist`);
@@ -175,14 +189,15 @@ export function removeNodeAndContract(G, id) {
     for (const parent of getParents(G, id)) {
         for (const child of getChildren(G, id)) {
             // TODO How should I handle edges with attributes? Probably prefer the parent.
-            setEdge(G, parent, child, G.edges.get(`${parent},${id}`));
+            addEdge(G, parent, child, G.edges.get(`${parent},${id}`));
         }
     }
     // TODO Incrementing the edits is unecessary because removeNode already does it.
     removeNode(G, id);
 }
 
-export function setEdge(G, source, target, attrDict) {
+// Throws an error if the edge already exists
+export function addEdge(G, source, target, attrDict) {
     if (!G.graph.has(source)) {
         throw new Error(`Adding edge between source=${source} and target=${target}, but source=${source} does not exist`);
     }
@@ -191,6 +206,17 @@ export function setEdge(G, source, target, attrDict) {
     }
     if (G.graph.get(source).has(target)) {
         throw new Error(`Adding edge between source=${source} and target=${target}, but edge already exists`);
+    }
+    setEdge(G, source, target, attrDict);
+}
+
+// Updates the edge if it already exists, adds it if not.
+export function setEdge(G, source, target, attrDict) {
+    if (!G.graph.has(source)) {
+        throw new Error(`Adding edge between source=${source} and target=${target}, but source=${source} does not exist`);
+    }
+    if (!G.graph.has(target)) {
+        throw new Error(`Adding edge between source=${source} and target=${target}, but target=${target} does not exist`);
     }
     G.graph.get(source).add(target);
     let edgeKey = `${source},${target}`;
