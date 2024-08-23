@@ -316,25 +316,41 @@ function nodeClickListener(event) {
 function getPriorityList(G, sourceNode, numViewEdits, maxParents) {
     // Technically this line is not necessary since this was called with getPriorityList(V, numViewEdits()) but leaving it in for future reference.
     let _ = numViewEdits;
-    let relevantNodes = Array.from(G.nodes.keys()).filter(n => {
+    let priorityList = Array.from(G.nodes.keys()).filter(n => {
         return G.nodes.get(n).numParents <= maxParents && (sourceNode === undefined || !dg.isPathBetween(G, n, sourceNode));
     });
     // Sort by ascending number of parents
-    let priorityList = relevantNodes.sort((a, b) => G.nodes.get(b).numParents - G.nodes.get(a).numParents).reverse();
-    return priorityList;
+    priorityList.sort((a, b) => G.nodes.get(a).numParents - G.nodes.get(b).numParents);
+    return priorityList.map(n => {
+        return {
+            id: n,
+            ...G.nodes.get(n)
+        }
+    });
 }
 
 function getSpineList(G, sourceNode, numViewEdits) {
     let _ = numViewEdits;
     let spine = fetchLongestPath(G);
-    return spine.filter(n => n !== sourceNode);
+    spine = spine.filter(n => n !== sourceNode);
+    return spine.map(n => {
+        return {
+            id: n,
+            ...G.nodes.get(n)
+        }
+    });
 }
 
 function getUnconnectedNodesList(G, sourceNode, numViewEdits) {
     let _ = numViewEdits;
     let unconnectedNodes = dg.getUnconnectedNodes(G, sourceNode);
     let orderedUnconnectedNodes = dg.topologicalSort(G).filter(n => unconnectedNodes.has(n));
-    return orderedUnconnectedNodes;
+    return orderedUnconnectedNodes.map(n => {
+        return {
+            id: n,
+            ...G.nodes.get(n)
+        }
+    });
 }
 
 // https://www.d3indepth.com/zoom-and-pan/

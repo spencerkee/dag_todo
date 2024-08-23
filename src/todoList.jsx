@@ -8,15 +8,15 @@ export default function TodoList(props) {
             {props.title}
             <div class="flexDirRow">
                 <For each={props.todoItems} >
-                    {(todo, i) => (
+                    {(todoItem, i) => (
                         <div>
-                            {props.V.nodes.get(todo).numParents}
+                            {todoItem.numParents}
                             <input
                                 type="checkbox"
-                                checked={props.D.nodes.get(todo).completed || false}
+                                checked={todoItem.completed || false}
                                 onChange={(e) => {
-                                    dg.setNode(props.D, todo, {
-                                        ...props.D.nodes.get(todo),
+                                    dg.setNode(props.D, todoItem.id, {
+                                        ...todoItem,
                                         completed: e.target.checked
                                     });
                                 }
@@ -24,26 +24,26 @@ export default function TodoList(props) {
                             />
                             <input
                                 type="text"
-                                value={props.D.nodes.get(todo).label}
+                                value={todoItem.label}
                                 style={
                                     { width: "40vw" }
                                 }
-                                onChange={(e) => dg.setNodeLabel(props.D, todo, e.currentTarget.value)}
+                                onChange={(e) => dg.setNodeLabel(props.D, todoItem.id, e.currentTarget.value)}
                             />
-                            <button onClick={() => { dg.removeNodeAndContract(props.D, todo) }}>
+                            <button onClick={() => { dg.removeNodeAndContract(props.D, todoItem.id) }}>
                                 x
                             </button>
-                            <button onClick={() => { props.setSourceNode(todo) }}>
+                            <button onClick={() => { props.setSourceNode(todoItem.id) }}>
                                 o
                             </button>
                             {/* Show unconnected nodes view */}
                             <Show
                                 when={local.sourceNode !== undefined}
                             >
-                                <button onClick={() => { dg.addEdge(props.D, local.sourceNode, todo) }}>
+                                <button onClick={() => { dg.addEdge(props.D, local.sourceNode, todoItem.id) }}>
                                     {">"}
                                 </button>
-                                <button onClick={() => { dg.addEdge(props.D, todo, local.sourceNode) }}>
+                                <button onClick={() => { dg.addEdge(props.D, todoItem.id, local.sourceNode) }}>
                                     {"<"}
                                 </button>
                             </Show>
