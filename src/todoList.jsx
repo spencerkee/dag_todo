@@ -1,9 +1,9 @@
 import * as dg from "./dg.js";
 export default function TodoList(props) {
     return (
-        <div class="todoListContainer">
+        <div class="flexDirCol">
             {props.title}
-            <div class="todoList">
+            <div class="flexDirRow">
                 <For each={props.todoItems} >
                     {(todo, i) => (
                         <div>

@@ -375,6 +375,8 @@ const [todos, setTodos] = createSignal([]);
 const [numDataEditsOnLastLoad, setNumDataEditsOnLastLoad] = createSignal(0);
 const [showCompleted, setShowCompleted] = createSignal(false);
 const [trackClearHistory, clearHistory] = createSignal(undefined, { equals: false });
+const [newChild, setNewChild] = createSignal("");
+const [newParent, setNewParent] = createSignal("");
 const D = {
     nodes: new Map(),
     edges: new Map(),
@@ -437,6 +439,22 @@ const App = () => {
             setTitle("");
         });
     };
+    const addNewChild = (e) => {
+        e.preventDefault();
+        batch(() => {
+            let newNodeId = dg.addNode(D, newChild());
+            dg.addEdge(D, sourceNode(), newNodeId);
+            setNewChild("");
+        });
+    };
+    const addNewParent = (e) => {
+        e.preventDefault();
+        batch(() => {
+            let newNodeId = dg.addNode(D, newParent());
+            dg.addEdge(D, newNodeId, sourceNode());
+            setNewParent("");
+        });
+    }
 
     const history = createMemo(() => {
         // Track what should rerun the memo
@@ -606,31 +624,53 @@ then clear the source node. */
                 <g id="svg-g" ref={svgGroup}></g>
             </svg>
             <Show when={sourceNode() !== undefined}>
-                {"Source Node: "}
-                <input
-                    type="checkbox"
-                    checked={D.nodes.get(sourceNode()).completed || false}
-                    onChange={(e) => {
-                        dg.setNode(D, sourceNode(), {
-                            ...D.nodes.get(sourceNode()),
-                            completed: e.target.checked
-                        });
-                        if (!showCompleted() && e.target.checked) {
-                            setSourceNode(undefined);
+                <div class="flexBox" >
+                    {"Source Node: "}
+                    <input
+                        type="checkbox"
+                        checked={D.nodes.get(sourceNode()).completed || false}
+                        onChange={(e) => {
+                            dg.setNode(D, sourceNode(), {
+                                ...D.nodes.get(sourceNode()),
+                                completed: e.target.checked
+                            });
+                            if (!showCompleted() && e.target.checked) {
+                                setSourceNode(undefined);
+                            }
                         }
-                    }
-                    }
-                />
-                <input
-                    type="text"
-                    value={D.nodes.get(sourceNode()).label}
-                    style={
-                        { width: "40vw" }
-                    }
-                    onChange={(e) => dg.setNodeLabel(D, sourceNode(), e.currentTarget.value)}
-                />
+                        }
+                    />
+                    <input
+                        type="text"
+                        value={D.nodes.get(sourceNode()).label}
+                        // style={
+                        //     { width: "40vw" }
+                        // }
+                        onChange={(e) => dg.setNodeLabel(D, sourceNode(), e.currentTarget.value)}
+                    />
+                    {"Parent: "}
+                    <form onSubmit={addNewParent}>
+                        <input
+                            placeholder="enter parent and click +"
+                            required
+                            value={newParent()}
+                            onInput={(e) => setNewParent(e.currentTarget.value)}
+                        />
+                        <button>+</button>
+                    </form>
+                    {"Child: "}
+                    <form onSubmit={addNewChild}>
+                        <input
+                            placeholder="enter child and click +"
+                            required
+                            value={newChild()}
+                            onInput={(e) => setNewChild(e.currentTarget.value)}
+                        />
+                        <button>+</button>
+                    </form>
+                </div>
             </Show>
-            <div class="box">
+            <div class="flexBox">
                 {/*
                 https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_flexible_box_layout/Basic_concepts_of_flexbox#shorthand_values_for_the_flex_properties
                 https://github.com/solidjs/solid/discussions/749
