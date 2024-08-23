@@ -1,5 +1,8 @@
+import { splitProps } from "solid-js";
 import * as dg from "./dg.js";
 export default function TodoList(props) {
+    // TODO Attempting to split out sourceNode so that we don't update the completed checkbox if the sourceNode changes. Instead we try to only update it when todoItems changes, and todoItems is dependent on sourceNode and numViewEdits. Not sure if it works. If I remove it I also don't have the issues I faced when deleting using the delete key before, but I think this reduces the number of updates.
+    const [local, others] = splitProps(props, ["sourceNode"]);
     return (
         <div class="flexDirCol">
             {props.title}
@@ -34,12 +37,12 @@ export default function TodoList(props) {
                             </button>
                             {/* Show unconnected nodes view */}
                             <Show
-                                when={props.sourceNode !== undefined}
+                                when={local.sourceNode !== undefined}
                             >
-                                <button onClick={() => { dg.addEdge(props.D, props.sourceNode, todo) }}>
+                                <button onClick={() => { dg.addEdge(props.D, local.sourceNode, todo) }}>
                                     {">"}
                                 </button>
-                                <button onClick={() => { dg.addEdge(props.D, todo, props.sourceNode) }}>
+                                <button onClick={() => { dg.addEdge(props.D, todo, local.sourceNode) }}>
                                     {"<"}
                                 </button>
                             </Show>

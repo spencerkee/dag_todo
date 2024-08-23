@@ -274,17 +274,13 @@ function elementOrParentMatchesSelector(element, selector) {
 }
 
 function genericClickListener(e) {
-    console.log('click in window');
     let node_or_null = elementOrParentMatchesSelector(e.target, 'g.node');
     // TODO Could do this more efficiently by doing this in the above step.
     let svg_or_null = elementOrParentMatchesSelector(e.target, '#svg-canvas');
 
     if (node_or_null === null && svg_or_null !== null && sourceNode() !== undefined) {
         // Clicked inside box, but not on a node so clear source node.
-        // clearSourceNode();
-        console.log('window clearing source node');
         setSourceNode(undefined);
-        // updateList();
 
         // Could set the graph label if we want.
         // d3.select("#graphLabel").text("");
@@ -548,10 +544,9 @@ then clear the source node. */
             const key = e.key;
             if (key === "Delete") {
                 if (sourceNode() !== undefined) {
-                    batch(() => {
-                        dg.removeNodeAndContract(D, sourceNode());
-                        setSourceNode(undefined);
-                    });
+                    // These cannot be batched because if the sourceNode is removed, the todoList will error out on trying to read its completed status.
+                    dg.removeNodeAndContract(D, sourceNode());
+                    setSourceNode(undefined);
                 }
             }
         });

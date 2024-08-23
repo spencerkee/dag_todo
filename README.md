@@ -35,6 +35,9 @@ You can deploy the `dist` folder to any static host provider (netlify, surge, no
 
 # TODO
 
+### 2024-08-23
+I have this problem where my todolist is dependent on sourceNode and the viewGraph, but the viewGraph updates after the sourceNode so there are unecessary updates. I want to split the reactivity.
+
 ### 2024-08-21
 Now that I have a view graph and a data graph, the weird thing is that the view graph needs to track changes to the datagraph, and then everyone else should track changes to the view graph. Just have a second signal? Seems easiest.
 
