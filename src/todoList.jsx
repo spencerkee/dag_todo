@@ -10,6 +10,7 @@ export default function TodoList(props) {
                 <For each={props.todoItems} >
                     {(todo, i) => (
                         <div>
+                            {props.V.nodes.get(todo).numParents}
                             <input
                                 type="checkbox"
                                 checked={props.D.nodes.get(todo).completed || false}

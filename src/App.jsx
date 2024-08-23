@@ -313,14 +313,15 @@ function nodeClickListener(event) {
     processNodeClick(nodeId, sourceNode, setSourceNode);
 }
 
-function getSourcesList(G, sourceNode, numViewEdits) {
-    // Technically this line is not necessary since this was called with getSourcesList(V, numViewEdits()) but leaving it in for future reference.
+function getPriorityList(G, sourceNode, numViewEdits, maxParents) {
+    // Technically this line is not necessary since this was called with getPriorityList(V, numViewEdits()) but leaving it in for future reference.
     let _ = numViewEdits;
-    let sources = dg.sources(G);
-    if (sourceNode !== undefined) {
-        sources = sources.filter(n => n !== sourceNode && !dg.isPathBetween(G, n, sourceNode));
-    }
-    return sources;
+    let relevantNodes = Array.from(G.nodes.keys()).filter(n => {
+        return G.nodes.get(n).numParents <= maxParents && (sourceNode === undefined || !dg.isPathBetween(G, n, sourceNode));
+    });
+    // Sort by ascending number of parents
+    let priorityList = relevantNodes.sort((a, b) => G.nodes.get(b).numParents - G.nodes.get(a).numParents).reverse();
+    return priorityList;
 }
 
 function getSpineList(G, sourceNode, numViewEdits) {
@@ -500,6 +501,7 @@ then clear the source node. */
         untrack(() => {
             // performTransitiveReduction(D);
             fetchViewGraph(D, V, shouldShowCompleted);
+            dg.addNumParents(V);
             console.debug(`d to v conversion setting numViewEdits = ${numViewEdits() + 1}`);
             setNumViewEdits(numViewEdits() + 1);
         });
@@ -534,6 +536,11 @@ then clear the source node. */
         const jsonGraph = graphToJson(D);
         localStorage.setItem('dataGraph', jsonGraph);
     });
+
+    // // Set the graph text when updating the sourceNode
+    // createEffect(() => {
+    //     d3.select("#graphLabel").text(sourceNode() === undefined ? "" : D.nodes.get(sourceNode()).label);
+    // });
 
     onMount(() => {
         console.log('mount');
@@ -617,6 +624,7 @@ then clear the source node. */
             />
             <svg id="svg-canvas" ref={svgCanvas}>
                 <g id="svg-g" ref={svgGroup}></g>
+                {/* <text id="graphLabel" text-anchor="middle" font-size="16px"></text> */}
             </svg>
             <Show when={sourceNode() !== undefined}>
                 <div class="flexBox" >
@@ -678,9 +686,10 @@ then clear the source node. */
                     setSourceNode={setSourceNode}
                     numViewEdits={numViewEdits()}
                     // Non-signals
-                    todoItems={getSourcesList(V, sourceNode(), numViewEdits())}
+                    todoItems={getPriorityList(V, sourceNode(), numViewEdits(), 3)}
                     D={D}
-                    title="Sources"
+                    V={V}
+                    title="Top Priorities"
                 />
                 <TodoList
                     // Signals
@@ -690,6 +699,7 @@ then clear the source node. */
                     // Non-signals
                     todoItems={getSpineList(V, sourceNode(), numViewEdits())}
                     D={D}
+                    V={V}
                     title="Spine"
                 />
                 <Show when={sourceNode() !== undefined}>
@@ -701,6 +711,7 @@ then clear the source node. */
                         // Non-signals
                         todoItems={getUnconnectedNodesList(V, sourceNode(), numViewEdits())}
                         D={D}
+                        V={V}
                         title="Unconnected"
                     />
                 </Show>

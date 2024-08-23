@@ -81,6 +81,23 @@ export function performTransitiveReduction(G) {
         }
     }
 }
+
+export function addNumParents(G) {
+    for (const [nodeId, _] of G.nodes) {
+        setNode(G, nodeId, { ...G.nodes.get(nodeId), numParents: 0 });
+    }
+    let topOrder = topologicalSort(G);
+    for (const v of topOrder) {
+        for (const w of G.graph.get(v)) {
+            if (G.nodes.get(w).numParents <= G.nodes.get(v).numParents + 1) {
+                setNode(G, w, {
+                    ...G.nodes.get(w),
+                    numParents: G.nodes.get(v).numParents + 1
+                });
+            }
+        }
+    }
+}
 /* End mutating helpers */
 
 /* Start getters */
