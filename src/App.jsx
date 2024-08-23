@@ -357,6 +357,7 @@ const [showCompleted, setShowCompleted] = createSignal(false);
 const [trackClearHistory, clearHistory] = createSignal(undefined, { equals: false });
 const [newChild, setNewChild] = createSignal("");
 const [newParent, setNewParent] = createSignal("");
+const [maxParents, setMaxParents] = createSignal(2);
 const D = {
     nodes: new Map(),
     edges: new Map(),
@@ -612,6 +613,12 @@ then clear the source node. */
             }}>
                 Clear Graph
             </button>
+            Max Parents
+            <input
+                type="text"
+                value={maxParents()}
+                onChange={(e) => setMaxParents(e.currentTarget.value)}
+            />
             Show Completed
             <input
                 type="checkbox"
@@ -686,7 +693,7 @@ then clear the source node. */
                     setSourceNode={setSourceNode}
                     numViewEdits={numViewEdits()}
                     // Non-signals
-                    todoItems={getPriorityList(V, sourceNode(), numViewEdits(), 3)}
+                    todoItems={getPriorityList(V, sourceNode(), numViewEdits(), maxParents())}
                     D={D}
                     V={V}
                     title="Top Priorities"
