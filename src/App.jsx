@@ -593,6 +593,18 @@ then clear the source node. */
             <button disabled={!history().canRedo()} onClick={history().redo}>
                 Redo
             </button>
+            <button onClick={() => { resetZoom(svgCanvas, svgGroup, zoom) }}>
+                Reset Zoom
+            </button>
+            <button onClick={() => {
+                batch(() => {
+                    for (const [nodeId, _] of D.nodes.entries()) {
+                        dg.removeNode(D, nodeId);
+                    }
+                });
+            }}>
+                Clear Graph
+            </button>
             Show Completed
             <input
                 type="checkbox"
