@@ -1,3 +1,5 @@
+import { batch } from "solid-js";
+
 // Reads
 // Writes
 /* Start of non-mutating helpers */
@@ -61,6 +63,25 @@ export function isPathBetween(G, source, target) {
     return getDescendents(G, source).includes(target);
 }
 /* End non-mutating helpers */
+
+/* Start of mutating helpers */
+export function performTransitiveReduction(G) {
+    /*
+    For each node x in the graph, start DFS from child of x (called y).
+    For each descendent of y (called z) remove the edge x,z
+    */
+    for (const [parent, children] of G.graph) {
+        for (const child of children) {
+            for (const descendent of getDescendents(G, child)) {
+                if (G.edges.has(`${parent},${descendent}`)) {
+                    console.log(`Removing edge from ${parent} to ${descendent}`);
+                    removeEdge(G, parent, descendent);
+                }
+            }
+        }
+    }
+}
+/* End mutating helpers */
 
 /* Start getters */
 // TODO Inefficient.
@@ -146,7 +167,7 @@ export function setNode(G, id, attrDict) {
     }
     G.nodes.set(id, attrDict);
     if (G.hasOwnProperty('numDataEdits')) {
-        console.debug(`addNode setting G.numDataEdits=${G.numDataEdits() + 1}`);
+        console.debug(`setNode setting G.numDataEdits=${G.numDataEdits() + 1}`);
         G.setNumDataEdits(G.numDataEdits() + 1);
     }
 }
@@ -157,7 +178,7 @@ export function setNodeLabel(G, nodeId, newNodeLabel) {
     }
     G.nodes.get(nodeId).label = newNodeLabel;
     if (G.hasOwnProperty('numDataEdits')) {
-        console.debug(`addNode setting G.numDataEdits=${G.numDataEdits() + 1}`);
+        console.debug(`setNodeLabel setting G.numDataEdits=${G.numDataEdits() + 1}`);
         G.setNumDataEdits(G.numDataEdits() + 1);
     }
 }
@@ -180,20 +201,23 @@ export function removeNode(G, id) {
         children.delete(id);
     }
     if (G.hasOwnProperty('numDataEdits')) {
-        console.debug(`addNode setting G.numDataEdits=${G.numDataEdits() + 1}`);
+        console.debug(`removeNode setting G.numDataEdits=${G.numDataEdits() + 1}`);
         G.setNumDataEdits(G?.numDataEdits() + 1);
     }
 }
 
 export function removeNodeAndContract(G, id) {
-    for (const parent of getParents(G, id)) {
-        for (const child of getChildren(G, id)) {
-            // TODO How should I handle edges with attributes? Probably prefer the parent.
-            addEdge(G, parent, child, G.edges.get(`${parent},${id}`));
+    batch(() => {
+        for (const parent of getParents(G, id)) {
+            for (const child of getChildren(G, id)) {
+                // TODO How should I handle edges with attributes? Probably prefer the parent.
+                addEdge(G, parent, child, G.edges.get(`${parent},${id}`));
+            }
         }
-    }
-    // TODO Incrementing the edits is unecessary because removeNode already does it.
-    removeNode(G, id);
+        // TODO Incrementing the edits is unecessary because removeNode already does it.
+        removeNode(G, id);
+        performTransitiveReduction(G);
+    });
 }
 
 // Throws an error if the edge already exists
@@ -208,6 +232,23 @@ export function addEdge(G, source, target, attrDict) {
         throw new Error(`Adding edge between source=${source} and target=${target}, but edge already exists`);
     }
     setEdge(G, source, target, attrDict);
+}
+
+// Throws an error if the edge already exists
+export function addEdgeAndReduce(G, source, target, attrDict) {
+    if (!G.graph.has(source)) {
+        throw new Error(`Adding edge between source=${source} and target=${target}, but source=${source} does not exist`);
+    }
+    if (!G.graph.has(target)) {
+        throw new Error(`Adding edge between source=${source} and target=${target}, but target=${target} does not exist`);
+    }
+    if (G.graph.get(source).has(target)) {
+        throw new Error(`Adding edge between source=${source} and target=${target}, but edge already exists`);
+    }
+    batch(() => {
+        setEdge(G, source, target, attrDict);
+        performTransitiveReduction(G);
+    });
 }
 
 // Updates the edge if it already exists, adds it if not.
@@ -226,7 +267,7 @@ export function setEdge(G, source, target, attrDict) {
         G.edges.set(edgeKey, {});
     }
     if (G.hasOwnProperty('numDataEdits')) {
-        console.debug(`addNode setting G.numDataEdits=${G.numDataEdits() + 1}`);
+        console.debug(`setEdge setting G.numDataEdits=${G.numDataEdits() + 1}`);
         G.setNumDataEdits(G.numDataEdits() + 1);
     }
 }
@@ -244,7 +285,7 @@ export function removeEdge(G, source, target) {
     G.graph.get(source).delete(target);
     G.edges.delete(`${source},${target}`);
     if (G.hasOwnProperty('numDataEdits')) {
-        console.debug(`addNode setting G.numDataEdits=${G.numDataEdits() + 1}`);
+        console.debug(`removeEdge setting G.numDataEdits=${G.numDataEdits() + 1}`);
         G.setNumDataEdits(G.numDataEdits() + 1);
     }
 }

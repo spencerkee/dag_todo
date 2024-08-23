@@ -115,7 +115,7 @@ function fetchViewGraph(dataGraph, viewGraph, showCompleted) {
                 dg.removeNode(viewGraph, nodeId);
             }
         }
-        performTransitiveReduction(viewGraph);
+        dg.performTransitiveReduction(viewGraph);
     }
 }
 
@@ -157,23 +157,6 @@ function fetchLongestPath(G) {
         current = lengthTo.get(current).pred;
     }
     return path.reverse();
-}
-
-function performTransitiveReduction(dataGraph) {
-    /*
-    For each node x in the graph, start DFS from child of x (called y).
-    For each descendent of y (called z) remove the edge x,z
-    */
-    for (const [parent, children] of dataGraph.graph) {
-        for (const child of children) {
-            for (const descendent of dg.getDescendents(dataGraph, child)) {
-                if (dataGraph.edges.has(`${parent},${descendent}`)) {
-                    console.log(`Removing edge from ${parent} to ${descendent}`);
-                    dg.removeEdge(dataGraph, parent, descendent);
-                }
-            }
-        }
-    }
 }
 
 function convertDataGraphToDagre(dataGraph) {
@@ -324,7 +307,7 @@ function processNodeClick(nodeId) {
 
     // Add edge
     console.log(`Adding edge from '${sourceNode()}' to '${nodeId}'`);
-    dg.addEdge(D, sourceNode(), nodeId);
+    dg.addEdgeAndReduce(D, sourceNode(), nodeId);
     // Don't do the below in case you want to set multiple children
     // setSourceNode(undefined);
 }
@@ -462,18 +445,22 @@ const App = () => {
         trackClearHistory();
         return createUndoHistory(() => {
             // track the changes to the state (and clone if you need to)
-            const v = numDataEdits();
-            console.debug(`Saving jsonGraph to history numDataEdits=${numDataEdits()}`);
+            // TODO I don't know if I need to track numViewEdits or numDataEdits here.
+            const v = numViewEdits();
+            console.debug(`Saving jsonGraph to history numViewEdits=${numViewEdits()}`);
+            // TODO Don't think I need to convert to json, possibly just slows things down.
             const json = graphToJson(D);
+            console.debug(`saving nodes=${Array.from(D.nodes.keys())} edges=${Array.from(D.edges.keys())}`);
 
             // return a callback to set the state back to the tracked value
             return () => {
-                console.debug(`Loading jsonGraph from history numDataEdits=${numDataEdits()} v=${v}`);
+                console.debug(`Loading jsonGraph from history numDataEdits = ${numDataEdits()} v = ${v}`);
                 const jsonGraph = jsonToGraph(json);
+                console.debug(`loading nodes = ${Array.from(jsonGraph.nodes.keys())} edges = ${Array.from(jsonGraph.edges.keys())}`);
                 // TODO Save this name in appState
                 updateGraphAFromGraphB(D, jsonGraph);
                 untrack(() => {
-                    setNumDataEdits(v);
+                    setNumDataEdits(numDataEdits() + 1);
                     // TODO?
                     // setNumDataEditsOnLastLoad(numDataEdits());
                 });
@@ -512,12 +499,12 @@ then clear the source node. */
     createEffect(() => {
         let _ = numDataEdits();
         let shouldShowCompleted = showCompleted();
-        console.debug(`Construct view numDataEdits=${numDataEdits()}`);
+        console.debug(`Construct view numDataEdits = ${numDataEdits()}`);
         // TODO Race condition with source node? Or removed now that I have the graph produce the signal?
         untrack(() => {
-            performTransitiveReduction(D);
+            // performTransitiveReduction(D);
             fetchViewGraph(D, V, shouldShowCompleted);
-            console.debug(`d to v conversion setting numViewEdits=${numViewEdits() + 1}`);
+            console.debug(`d to v conversion setting numViewEdits = ${numViewEdits() + 1}`);
             setNumViewEdits(numViewEdits() + 1);
         });
     });
@@ -526,7 +513,7 @@ then clear the source node. */
     createEffect(() => {
         console.log('render loop')
         let _ = numViewEdits();
-        console.debug(`Render view numViewEdits=${numViewEdits()}`);
+        console.debug(`Render view numViewEdits = ${numViewEdits()}`);
         renderGraph = convertDataGraphToDagre(V);
         renderer(d3.select(svgGroup), renderGraph);
         // Add event listeners
@@ -554,6 +541,7 @@ then clear the source node. */
 
     onMount(() => {
         console.log('mount');
+        clearHistory();
         /* Event Listeners */
         // Listen for the delete key to remove nodes.
         window.addEventListener('keyup', function (e) {
@@ -615,7 +603,7 @@ then clear the source node. */
                 type="checkbox"
                 checked={showCompleted()}
                 onChange={(e) => {
-                    console.log(`showCompleted=${showCompleted()} changing to ${e.target.checked}`);
+                    console.log(`showCompleted = ${showCompleted()} changing to ${e.target.checked}`);
                     setShowCompleted(e.target.checked);
                 }
                 }
