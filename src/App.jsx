@@ -344,6 +344,12 @@ function getSourcesList(G, sourceNode, numViewEdits) {
     return sources;
 }
 
+function getSpineList(G, sourceNode, numViewEdits) {
+    let _ = numViewEdits;
+    let spine = fetchLongestPath(G);
+    return spine.filter(n => n !== sourceNode);
+}
+
 function getUnconnectedNodesList(G, sourceNode, numViewEdits) {
     let _ = numViewEdits;
     let unconnectedNodes = dg.getUnconnectedNodes(G, sourceNode);
@@ -647,7 +653,7 @@ then clear the source node. */
                     setSourceNode={setSourceNode}
                     numViewEdits={numViewEdits()}
                     // Non-signals
-                    todoItems={fetchLongestPath(V, numViewEdits())}
+                    todoItems={getSpineList(V, sourceNode(), numViewEdits())}
                     D={D}
                     title="Spine"
                 />
