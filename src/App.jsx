@@ -353,6 +353,17 @@ function getUnconnectedNodesList(G, sourceNode, numViewEdits) {
     });
 }
 
+function triNum(n) {
+    return n * (n + 1) / 2;
+}
+
+function computeStats(V, D, numViewEdits) {
+    let currentComparisons = Array.from(V.nodes.values()).reduce((partialSum, n) => partialSum + n.numParents, 0);
+    let totalComparisons = triNum(Math.max(V.nodes.size - 1, 0));
+    let numCompleted = Array.from(D.nodes.values()).reduce((partialSum, n) => partialSum + (n.completed ? 1 : 0), 0);
+    return `Comparison Progress: ${currentComparisons}/${totalComparisons} Completed: ${numCompleted}/${D.nodes.size}`;
+}
+
 // https://www.d3indepth.com/zoom-and-pan/
 const zoom = d3.zoom()
     // TODO constrain zoom and pan.
@@ -464,13 +475,13 @@ const App = () => {
             console.debug(`Saving jsonGraph to history numViewEdits=${numViewEdits()}`);
             // TODO Don't think I need to convert to json, possibly just slows things down.
             const json = graphToJson(D);
-            console.debug(`saving nodes=${Array.from(D.nodes.keys())} edges=${Array.from(D.edges.keys())}`);
+            // console.debug(`saving nodes=${Array.from(D.nodes.keys())} edges=${Array.from(D.edges.keys())}`);
 
             // return a callback to set the state back to the tracked value
             return () => {
                 console.debug(`Loading jsonGraph from history numDataEdits = ${numDataEdits()} v = ${v}`);
                 const jsonGraph = jsonToGraph(json);
-                console.debug(`loading nodes = ${Array.from(jsonGraph.nodes.keys())} edges = ${Array.from(jsonGraph.edges.keys())}`);
+                // console.debug(`loading nodes = ${Array.from(jsonGraph.nodes.keys())} edges = ${Array.from(jsonGraph.edges.keys())}`);
                 // TODO Save this name in appState
                 updateGraphAFromGraphB(D, jsonGraph);
                 untrack(() => {
@@ -645,6 +656,7 @@ then clear the source node. */
                 }
                 }
             />
+            <div>{computeStats(V, D, numViewEdits())}</div>
             <svg id="svg-canvas" ref={svgCanvas}>
                 <g id="svg-g" ref={svgGroup}></g>
                 {/* <text id="graphLabel" text-anchor="middle" font-size="16px"></text> */}
