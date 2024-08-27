@@ -124,6 +124,8 @@ function newGraph() {
         .setGraph({
             rankdir: "LR",
             ranker: "tight-tree",
+            nodesep: 5,
+            ranksep: 20
         })
         .setDefaultEdgeLabel(function () { return {}; });
 }
