@@ -121,7 +121,10 @@ function fetchViewGraph(dataGraph, viewGraph, showCompleted) {
 
 function newGraph() {
     return new dagreD3.graphlib.Graph()
-        .setGraph({ rankdir: "LR" })
+        .setGraph({
+            rankdir: "LR",
+            ranker: "tight-tree",
+        })
         .setDefaultEdgeLabel(function () { return {}; });
 }
 
