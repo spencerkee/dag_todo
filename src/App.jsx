@@ -69,7 +69,7 @@ function saveFile(state) {
     setNumDataEditsOnLastLoad(numDataEdits());
 }
 
-function openFile() {
+function clickInputFileBtn() {
     document.getElementById('inputFile').click();
 }
 
@@ -85,7 +85,7 @@ function cloneGraphAToGraphB(dataGraph, jsonGraph) {
     dataGraph.graph = structuredClone(jsonGraph.graph);
 }
 
-function loadFile(fileBlob) {
+function loadFileObj(fileBlob) {
     if (fileBlob === undefined) return;
     let reader = new FileReader();
     reader.readAsText(fileBlob);
@@ -95,7 +95,7 @@ function loadFile(fileBlob) {
         updateGraphAFromGraphB(D, jsonGraph);
         batch(() => {
             setSourceNode(undefined);
-            console.debug(`loadFile setting numDataEdits=${numDataEdits() + 1}`);
+            console.debug(`loadFileObj setting numDataEdits=${numDataEdits() + 1}`);
             setNumDataEdits(numDataEdits() + 1);
             setNumDataEditsOnLastLoad(numDataEdits());
             clearHistory();
@@ -468,6 +468,18 @@ const App = () => {
             setNewParent("");
         });
     }
+    const openFile = (e) => {
+        // TODO Not sure about this option chaining.
+        let fileObj = e?.target?.files[0];
+        // Works even if there's no extension.
+        let filenameWithoutExtension = fileObj.name.replace(/\.[^/.]+$/, "");
+        // Remove the trailing underscore and timestamp like todo_list_2024-09-09T20_33_53 -> todo_list.
+        // This also handles cases where there are no underscores or multiple.
+        let graphName = filenameWithoutExtension.replace(/_[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}_[0-9]{2}_[0-9]{2}/, "");
+        setGraphName(graphName);
+        loadFileObj(fileObj);
+        resetZoom(svgCanvas, svgGroup, zoom);
+    }
 
     const history = createMemo(() => {
         // Track what should rerun the memo
@@ -601,16 +613,8 @@ then clear the source node. */
         <>
             <h3>TODO Dag</h3>
             <button onClick={() => saveFile(D)}>Save File</button>
-            <input type="file" name="" id='inputFile' onChange={(e) => {
-                // TODO Not sure about this option chaining.
-                let fileObj = e?.target?.files[0];
-                // Works even if there's no extension.
-                let filenameWithoutExtension = fileObj.name.replace(/\.[^/.]+$/, "");
-                setGraphName(filenameWithoutExtension);
-                loadFile(fileObj);
-                resetZoom(svgCanvas, svgGroup, zoom);
-            }} hidden></input >
-            <button onClick={() => openFile()}>Load File</button>
+            <input type="file" name="" id='inputFile' onChange={openFile} hidden></input >
+            <button onClick={() => clickInputFileBtn()}>Load File</button>
             <input
                 type="text"
                 value={graphName()}
